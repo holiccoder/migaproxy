@@ -2,5 +2,12 @@
     "agents": [
         "codex"
     ],
-    "guidelines": true
+    "packages": [
+        "filament/filament"
+    ],
+    "skills": [
+        "mcp-development",
+        "pest-testing",
+        "tailwindcss-development"
+    ]
 }
