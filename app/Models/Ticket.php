@@ -20,14 +20,23 @@ class Ticket extends Model
 
     public const STATUS_CLOSED = 'closed';
 
+    public const CATEGORY_BILLING = 'billing';
+
+    public const CATEGORY_TECHNICAL = 'technical';
+
+    public const CATEGORY_FEATURE_REQUEST = 'feature_request';
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'user_id',
         'subject',
+        'category',
         'status',
         'priority',
+        'context',
+        'attachment_path',
         'last_user_reply_at',
         'last_admin_reply_at',
         'resolved_at',
@@ -42,6 +51,7 @@ class Ticket extends Model
             'last_user_reply_at' => 'datetime',
             'last_admin_reply_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'context' => 'array',
         ];
     }
 

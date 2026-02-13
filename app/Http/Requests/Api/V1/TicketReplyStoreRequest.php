@@ -23,6 +23,7 @@ class TicketReplyStoreRequest extends FormRequest
     {
         return [
             'message' => ['required', 'string', 'max:10000'],
+            'attachment' => ['sometimes', 'file', 'max:5120'],
         ];
     }
 
@@ -34,6 +35,7 @@ class TicketReplyStoreRequest extends FormRequest
         return [
             'message.required' => 'Message is required.',
             'message.max' => 'Message may not be greater than 10000 characters.',
+            'attachment.max' => 'Attachment may not be greater than 5 MB.',
         ];
     }
 }

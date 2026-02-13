@@ -24,6 +24,8 @@ class User extends Authenticatable
         'name',
         'email',
         'github_id',
+        'avatar_path',
+        'balance',
         'password',
     ];
 
@@ -47,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'balance' => 'integer',
         ];
     }
 
@@ -73,5 +76,10 @@ class User extends Authenticatable
     public function affiliate(): HasOne
     {
         return $this->hasOne(Affiliate::class);
+    }
+
+    public function balanceHistories(): HasMany
+    {
+        return $this->hasMany(BalanceHistory::class);
     }
 }
