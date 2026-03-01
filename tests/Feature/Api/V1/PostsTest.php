@@ -84,12 +84,24 @@ test('posts show returns a published post by slug', function () {
         'status' => Post::STATUS_PUBLISHED,
         'published_at' => now()->subDay(),
     ]);
+    $post->seo()->update([
+        'title' => 'Post SEO Title',
+        'description' => 'Post SEO Description',
+        'canonical_url' => 'https://example.test/blog/'.$post->slug,
+    ]);
 
     $response = $this->getJson("/api/v1/posts/{$post->slug}");
 
     $response
         ->assertOk()
-        ->assertJsonPath('data.slug', $post->slug);
+        ->assertJsonPath('data.slug', $post->slug)
+        ->assertJsonPath('data.seo.title', 'Post SEO Title')
+        ->assertJsonPath('data.seo.description', 'Post SEO Description')
+        ->assertJsonPath('data.seo.canonical_url', 'https://example.test/blog/'.$post->slug)
+        ->assertJsonPath('data.seo.open_graph.title', 'Post SEO Title')
+        ->assertJsonPath('data.seo.open_graph.type', 'article')
+        ->assertJsonPath('data.seo.twitter_card.title', 'Post SEO Title')
+        ->assertJsonPath('data.seo.twitter_card.card', 'summary');
 });
 
 test('posts show rejects unpublished posts', function () {

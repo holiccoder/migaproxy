@@ -24,7 +24,15 @@ class User extends Authenticatable
         'name',
         'email',
         'github_id',
+        'google_id',
+        'x_id',
         'avatar_path',
+        'skype_profile',
+        'telegram_profile',
+        'facebook_profile',
+        'x_profile',
+        'youtube_profile',
+        'instagram_profile',
         'balance',
         'password',
     ];
@@ -81,5 +89,10 @@ class User extends Authenticatable
     public function balanceHistories(): HasMany
     {
         return $this->hasMany(BalanceHistory::class);
+    }
+
+    public function postComments(): HasMany
+    {
+        return $this->hasMany(PostComment::class);
     }
 }

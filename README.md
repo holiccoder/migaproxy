@@ -11,4 +11,6 @@
 9. add user registration, orders and payment chart --done
 10. change hero icons of the side menu -- done
 11. create a coupon system for discounts that when a user uses a coupon, the coupon is applied to the order, the coupon can be a percentage discounts or fixed amount when adding --done
-12. third party login
+12. third party login --done
+13. stale tickets are closed automatically after 3 days of inactivity -- done
+14. 

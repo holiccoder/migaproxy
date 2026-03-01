@@ -12,38 +12,95 @@ use Throwable;
 
 class SocialAuthController extends Controller
 {
+    /**
+     * @var array<string, array{id_column: string, label: string}>
+     */
+    private const PROVIDERS = [
+        'github' => [
+            'id_column' => 'github_id',
+            'label' => 'GitHub',
+        ],
+        'google' => [
+            'id_column' => 'google_id',
+            'label' => 'Google',
+        ],
+        'x' => [
+            'id_column' => 'x_id',
+            'label' => 'X',
+        ],
+    ];
+
     public function redirectToGithub(): RedirectResponse
     {
-        return Socialite::driver('github')
-            ->stateless()
-            ->redirect();
+        return $this->redirectToProvider('github');
+    }
+
+    public function redirectToGoogle(): RedirectResponse
+    {
+        return $this->redirectToProvider('google');
+    }
+
+    public function redirectToX(): RedirectResponse
+    {
+        return $this->redirectToProvider('x');
     }
 
     public function handleGithubCallback(): JsonResponse
     {
+        return $this->handleProviderCallback('github');
+    }
+
+    public function handleGoogleCallback(): JsonResponse
+    {
+        return $this->handleProviderCallback('google');
+    }
+
+    public function handleXCallback(): JsonResponse
+    {
+        return $this->handleProviderCallback('x');
+    }
+
+    private function redirectToProvider(string $provider): RedirectResponse
+    {
+        return Socialite::driver($provider)
+            ->stateless()
+            ->redirect();
+    }
+
+    private function handleProviderCallback(string $provider): JsonResponse
+    {
+        $providerConfig = self::PROVIDERS[$provider] ?? null;
+
+        if (! is_array($providerConfig)) {
+            return response()->json([
+                'message' => 'Unsupported social provider.',
+            ], 422);
+        }
+
         try {
-            $socialiteUser = Socialite::driver('github')
+            $socialiteUser = Socialite::driver($provider)
                 ->stateless()
                 ->user();
         } catch (Throwable $throwable) {
             return response()->json([
-                'message' => 'GitHub authentication failed.',
+                'message' => "{$providerConfig['label']} authentication failed.",
             ], 422);
         }
 
-        $githubId = $socialiteUser->getId();
+        $providerId = $socialiteUser->getId();
 
-        if (! is_string($githubId) || $githubId === '') {
+        if (! is_string($providerId) || $providerId === '') {
             return response()->json([
-                'message' => 'GitHub account id is missing.',
+                'message' => "{$providerConfig['label']} account id is missing.",
             ], 422);
         }
 
         $email = $socialiteUser->getEmail();
-        $name = $socialiteUser->getName() ?: $socialiteUser->getNickname() ?: 'GitHub User';
+        $name = $socialiteUser->getName() ?: $socialiteUser->getNickname() ?: "{$providerConfig['label']} User";
+        $providerIdColumn = $providerConfig['id_column'];
 
         $user = User::query()
-            ->where('github_id', $githubId)
+            ->where($providerIdColumn, $providerId)
             ->first();
 
         if (! $user && is_string($email) && $email !== '') {
@@ -55,15 +112,15 @@ class SocialAuthController extends Controller
         if (! $user) {
             $user = User::query()->create([
                 'name' => $name,
-                'email' => is_string($email) && $email !== '' ? $email : "github-{$githubId}@users.local",
-                'github_id' => $githubId,
+                'email' => is_string($email) && $email !== '' ? $email : "{$provider}-{$providerId}@users.local",
+                $providerIdColumn => $providerId,
                 'password' => Str::random(40),
                 'email_verified_at' => now(),
             ]);
         } else {
             $user->forceFill([
                 'name' => $user->name ?: $name,
-                'github_id' => $githubId,
+                $providerIdColumn => $providerId,
             ])->save();
         }
 

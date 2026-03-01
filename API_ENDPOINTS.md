@@ -5,6 +5,14 @@ Auth type for protected endpoints: `Authorization: Bearer <sanctum_token>`
 
 ## Authentication
 
+### Frontend Proxy Guard (Next.js)
+- File: `frontend/src/proxy.ts`
+- Note: Next.js now uses the `proxy.ts` convention (replacing `middleware.ts`).
+- Behavior:
+- Redirects `/` to `/dashboard` when authenticated, otherwise to `/login`.
+- Redirects unauthenticated access to protected frontend routes (`/dashboard`, `/notifications`, `/tickets`, `/orders`, `/wallet`, `/pricing`, `/affiliate`, `/faq`, `/help-center`) to `/login?redirect={pathname}`.
+- Redirects authenticated users away from `/login` and `/register` to `/dashboard`.
+
 ### Register
 - Method: `POST`
 - URL: `/api/v1/register`
@@ -329,6 +337,23 @@ Plan creation is admin-only via Filament backend and is not exposed as a public 
 - Method: `GET`
 - URL: `/api/v1/posts/{slug}`
 - Auth: No
+
+### List CMS Pages
+- Method: `GET`
+- URL: `/api/v1/cms-pages`
+- Auth: No
+- Query params:
+- `per_page` (1-50)
+- `search` (text across title, excerpt, content)
+- Notes:
+- Returns only published pages (`status=published` and `published_at <= now`).
+
+### Show CMS Page
+- Method: `GET`
+- URL: `/api/v1/cms-pages/{slug}`
+- Auth: No
+- Notes:
+- Returns only published pages; draft/scheduled pages return `404`.
 
 ## Default Sanctum User Endpoint
 

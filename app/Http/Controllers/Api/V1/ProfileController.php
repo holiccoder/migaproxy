@@ -31,10 +31,18 @@ class ProfileController extends Controller
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
+        $normalizeSocial = static fn (?string $value): ?string => filled($value) ? trim($value) : null;
+
         $user->forceFill([
             'name' => trim($validated['first_name'].' '.$validated['last_name']),
             'email' => $validated['email'],
             'avatar_path' => $avatarPath,
+            'skype_profile' => $normalizeSocial($validated['skype_profile'] ?? null),
+            'telegram_profile' => $normalizeSocial($validated['telegram_profile'] ?? null),
+            'facebook_profile' => $normalizeSocial($validated['facebook_profile'] ?? null),
+            'x_profile' => $normalizeSocial($validated['x_profile'] ?? null),
+            'youtube_profile' => $normalizeSocial($validated['youtube_profile'] ?? null),
+            'instagram_profile' => $normalizeSocial($validated['instagram_profile'] ?? null),
         ])->save();
 
         return response()->json([
@@ -46,6 +54,12 @@ class ProfileController extends Controller
                     'email' => $user->email,
                     'avatar_path' => $user->avatar_path,
                     'avatar_url' => $user->avatar_path ? asset('storage/'.$user->avatar_path) : null,
+                    'skype_profile' => $user->skype_profile,
+                    'telegram_profile' => $user->telegram_profile,
+                    'facebook_profile' => $user->facebook_profile,
+                    'x_profile' => $user->x_profile,
+                    'youtube_profile' => $user->youtube_profile,
+                    'instagram_profile' => $user->instagram_profile,
                 ],
             ],
         ]);

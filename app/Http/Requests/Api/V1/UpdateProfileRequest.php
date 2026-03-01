@@ -24,6 +24,12 @@ class UpdateProfileRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'avatar' => ['nullable', 'image', 'max:2048'],
+            'skype_profile' => ['nullable', 'string', 'max:255'],
+            'telegram_profile' => ['nullable', 'string', 'max:255'],
+            'facebook_profile' => ['nullable', 'string', 'max:255'],
+            'x_profile' => ['nullable', 'string', 'max:255'],
+            'youtube_profile' => ['nullable', 'string', 'max:255'],
+            'instagram_profile' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -40,6 +46,12 @@ class UpdateProfileRequest extends FormRequest
             'email.unique' => 'Email has already been taken.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.max' => 'Avatar may not be greater than 2 MB.',
+            'skype_profile.max' => 'Skype profile may not be greater than 255 characters.',
+            'telegram_profile.max' => 'Telegram profile may not be greater than 255 characters.',
+            'facebook_profile.max' => 'Facebook profile may not be greater than 255 characters.',
+            'x_profile.max' => 'X profile may not be greater than 255 characters.',
+            'youtube_profile.max' => 'YouTube profile may not be greater than 255 characters.',
+            'instagram_profile.max' => 'Instagram profile may not be greater than 255 characters.',
         ];
     }
 }

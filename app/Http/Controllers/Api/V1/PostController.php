@@ -47,7 +47,7 @@ class PostController extends Controller
     public function show(string $slug): PostResource
     {
         $post = Post::query()
-            ->with(['categories', 'tags'])
+            ->with(['categories', 'tags', 'seo'])
             ->published()
             ->where('slug', $slug)
             ->firstOrFail();
