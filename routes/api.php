@@ -32,6 +32,8 @@ Route::get('/user', function (Request $request) {
         ], 401);
     }
 
+    $ipmartAccount = $user->ipmart()->first(['plan_balance', 'proxyName', 'proxyPwd']);
+
     return response()->json([
         'id' => $user->id,
         'name' => $user->name,
@@ -45,6 +47,9 @@ Route::get('/user', function (Request $request) {
         'youtube_profile' => $user->youtube_profile,
         'instagram_profile' => $user->instagram_profile,
         'balance' => $user->balance,
+        'plan_balance' => $ipmartAccount?->plan_balance,
+        'proxyName' => $ipmartAccount?->proxyName,
+        'proxyPwd' => $ipmartAccount?->proxyPwd,
     ]);
 })->middleware('auth:sanctum');
 
@@ -91,12 +96,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('affiliate/conversions', [AffiliateController::class, 'conversions'])->name('api.v1.affiliate.conversions');
 
         Route::prefix('ipmart')->group(function (): void {
-            Route::get('countries', [IPmartController::class, 'getCountries'])->name('api.v1.ipmart.countries');
-            Route::get('states', [IPmartController::class, 'getStates'])->name('api.v1.ipmart.states');
-            Route::get('cities', [IPmartController::class, 'getCities'])->name('api.v1.ipmart.cities');
-            Route::get('protocols', [IPmartController::class, 'getProtocols'])->name('api.v1.ipmart.protocols');
-            Route::get('patterns', [IPmartController::class, 'getPatterns'])->name('api.v1.ipmart.patterns');
-            Route::get('rules', [IPmartController::class, 'getRules'])->name('api.v1.ipmart.rules');
+            Route::get('proxy-options', [IPmartController::class, 'getProxyOptions'])->name('api.v1.ipmart.proxy-options');
             Route::get('static-products', [IPmartController::class, 'getStaticProducts'])->name('api.v1.ipmart.static-products');
             Route::get('static-ip-count', [IPmartController::class, 'getStaticIpCount'])->name('api.v1.ipmart.static-ip-count');
             Route::get('traffic-history', [IPmartController::class, 'getTrafficHistory'])->name('api.v1.ipmart.traffic-history');

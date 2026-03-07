@@ -141,6 +141,37 @@ class IPmartController extends Controller
     }
 
     /**
+     * Get proxy options
+     */
+    public function getProxyOptions(): JsonResponse
+    {
+        $instance = new DataRequest;
+
+        $countries = $instance->getCountries();
+        $protocols = $instance->chooseProtocol();
+        $patterns = $instance->proxyPattern();
+        $rules = $instance->getProxyRules();
+
+        if ($countries && $protocols && $patterns && $rules) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'countries' => $countries,
+                    'protocols' => $protocols,
+                    'patterns' => $patterns,
+                    'rules' => $rules,
+                    'test_link' => '',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch proxy options from IPmart',
+        ], 500);
+    }
+
+    /**
      * Get static residential products
      */
     public function getStaticProducts(): JsonResponse

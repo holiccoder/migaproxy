@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\UserRegistered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
@@ -13,7 +14,11 @@ class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = User::query()->create($request->validated());
+        $validated = $request->validated();
+
+        $user = User::query()->create($validated);
+
+        UserRegistered::dispatch($user, $validated['password']);
 
         $token = $user->createToken('api-token')->plainTextToken;
 
@@ -42,11 +47,17 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('api-token')->plainTextToken;
+        $ipmartAccount = $user->ipmart()->first(['plan_balance', 'proxyName', 'proxyPwd']);
+        $userPayload = array_merge($user->toArray(), [
+            'plan_balance' => $ipmartAccount?->plan_balance,
+            'proxyName' => $ipmartAccount?->proxyName,
+            'proxyPwd' => $ipmartAccount?->proxyPwd,
+        ]);
 
         return response()->json([
             'message' => 'Login successful.',
             'data' => [
-                'user' => $user,
+                'user' => $userPayload,
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],

@@ -86,6 +86,11 @@ class User extends Authenticatable
         return $this->hasOne(Affiliate::class);
     }
 
+    public function ipmart(): HasOne
+    {
+        return $this->hasOne(Ipmart::class);
+    }
+
     public function balanceHistories(): HasMany
     {
         return $this->hasMany(BalanceHistory::class);

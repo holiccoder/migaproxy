@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Ipmart;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
@@ -13,6 +14,17 @@ test('authenticated user endpoint includes social profile fields', function () {
         'instagram_profile' => 'https://instagram.com/john_doe',
     ]);
 
+    Ipmart::query()->updateOrCreate([
+        'user_id' => (string) $user->id,
+    ], [
+        'ipmart_id' => 'ipmart-profile-1',
+        'plan_balance' => '120',
+        'proxyName' => 'john-proxy-name',
+        'proxyPwd' => 'john-proxy-password',
+        'login_name' => 'john-login-name',
+        'passwd' => 'john-ipmart-password',
+    ]);
+
     Sanctum::actingAs($user);
 
     $response = $this->getJson('/api/user');
@@ -24,7 +36,10 @@ test('authenticated user endpoint includes social profile fields', function () {
         ->assertJsonPath('facebook_profile', 'https://facebook.com/john.doe')
         ->assertJsonPath('x_profile', 'https://x.com/john_doe')
         ->assertJsonPath('youtube_profile', 'https://youtube.com/@john_doe')
-        ->assertJsonPath('instagram_profile', 'https://instagram.com/john_doe');
+        ->assertJsonPath('instagram_profile', 'https://instagram.com/john_doe')
+        ->assertJsonPath('plan_balance', 120)
+        ->assertJsonPath('proxyName', 'john-proxy-name')
+        ->assertJsonPath('proxyPwd', 'john-proxy-password');
 });
 
 test('profile update stores social profile fields', function () {

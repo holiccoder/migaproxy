@@ -5,7 +5,6 @@ namespace App\Services\Api\IPmart;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use phpDocumentor\Reflection\Types\Boolean;
 
 class DataRequest
 {
@@ -60,7 +59,7 @@ class DataRequest
     /**
      * register user and get id, proxyName and proxy password
      */
-    public static function registerUser($email, $password, $remark = ''): array|Boolean
+    public static function registerUser($email, $password, $remark = ''): array|bool
     {
         $instance = new static;
 
@@ -71,31 +70,32 @@ class DataRequest
         ];
         $response = $instance->sendRequest('custom/add-user', $data, 'POST');
 
-        if ($response) {
-            $id = $response['id'];
-
-            $getUserInfo = $instance->sendRequest('custom/getSubUserById', ['subUserId' => $id], 'POST');
-
-            if ($getUserInfo) {
-
-                $proxyName = $getUserInfo['proxyName'];
-                $proxyPwd = $getUserInfo['proxyPwd'];
-                $login_name = $getUserInfo['login_name'];
-                $passwd = $getUserInfo['passwd'];
-
-                return [
-                    'ipmart_id' => $id,
-                    'proxyName' => $proxyName,
-                    'proxyPwd' => $proxyPwd,
-                    'login_name' => $login_name,
-                    'passwd' => $passwd,
-                ];
-            } else {
-                return false;
-            }
-        } else {
+        if (! is_array($response) || ! isset($response['id'])) {
             return false;
         }
+
+        $ipmartId = $response['id'];
+        $getUserInfo = $instance->sendRequest('custom/getSubUserById', ['subUserId' => $ipmartId], 'POST');
+        $ipmartUserInfo = is_array($getUserInfo) ? $getUserInfo : $response;
+
+        if (
+            ! isset($ipmartUserInfo['proxyName']) ||
+            ! isset($ipmartUserInfo['proxyPwd']) ||
+            ! isset($ipmartUserInfo['login_name']) ||
+            ! isset($ipmartUserInfo['passwd'])
+        ) {
+            return false;
+        }
+
+        return [
+            'ipmart_id' => (string) ($ipmartUserInfo['id'] ?? $ipmartId),
+            'ipmart_email' => (string) ($ipmartUserInfo['email'] ?? $email),
+            'plan_balance' => (string) ($ipmartUserInfo['plan_balance'] ?? 0),
+            'proxyName' => (string) $ipmartUserInfo['proxyName'],
+            'proxyPwd' => (string) $ipmartUserInfo['proxyPwd'],
+            'login_name' => (string) $ipmartUserInfo['login_name'],
+            'passwd' => (string) $ipmartUserInfo['passwd'],
+        ];
 
     }
 
@@ -146,6 +146,16 @@ class DataRequest
         $response = $instance->sendRequest('custom/rules', []);
 
         return $response;
+    }
+
+    public function getProxyRules()
+    {
+        return self::proxyRules();
+    }
+
+    public function getCountries()
+    {
+        return self::chooseArea(0);
     }
 
     /**
