@@ -16,15 +16,12 @@ class Plan extends Model
      */
     protected $fillable = [
         'name',
-        'slug',
+        'traffic',
         'description',
-        'amount',
-        'currency',
-        'interval_unit',
-        'interval_count',
+        'features',
+        'price',
+        'days',
         'is_active',
-        'provider',
-        'provider_price_id',
     ];
 
     /**
@@ -33,8 +30,10 @@ class Plan extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'integer',
-            'interval_count' => 'integer',
+            'traffic' => 'integer',
+            'features' => 'array',
+            'price' => 'integer',
+            'days' => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -49,12 +48,8 @@ class Plan extends Model
         return $this->hasMany(Subscription::class);
     }
 
-    public function intervalInMonths(): int
+    public function durationInDays(): int
     {
-        if ($this->interval_unit === 'year') {
-            return $this->interval_count * 12;
-        }
-
-        return $this->interval_count;
+        return max(1, $this->days);
     }
 }

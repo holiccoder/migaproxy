@@ -2,12 +2,10 @@
 
 namespace App\Filament\Resources\Plans\Schemas;
 
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Str;
 
 class PlanForm
 {
@@ -18,43 +16,27 @@ class PlanForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                TextInput::make('slug')
-                    ->required()
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                Textarea::make('description')
-                    ->maxLength(2000)
-                    ->columnSpanFull(),
-                TextInput::make('amount')
+                TextInput::make('traffic')
                     ->required()
                     ->numeric()
-                    ->minValue(1),
-                TextInput::make('currency')
+                    ->minValue(0),
+                TextInput::make('description')
                     ->required()
-                    ->length(3)
-                    ->dehydrateStateUsing(fn (string $state): string => Str::upper($state)),
-                Select::make('interval_unit')
-                    ->options([
-                        'month' => 'Month',
-                        'year' => 'Year',
-                    ])
+                    ->columnSpanFull(),
+                KeyValue::make('features')
+                    ->columnSpanFull(),
+                TextInput::make('price')
                     ->required()
-                    ->default('month'),
-                TextInput::make('interval_count')
+                    ->numeric()
+                    ->minValue(0),
+                TextInput::make('days')
                     ->required()
                     ->numeric()
                     ->minValue(1)
-                    ->maxValue(12)
-                    ->default(1),
+                    ->default(30),
                 Toggle::make('is_active')
                     ->required()
                     ->default(true),
-                TextInput::make('provider')
-                    ->required()
-                    ->maxLength(100)
-                    ->default('fake'),
-                TextInput::make('provider_price_id')
-                    ->maxLength(255),
             ]);
     }
 }

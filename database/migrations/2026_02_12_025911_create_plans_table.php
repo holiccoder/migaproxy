@@ -14,15 +14,11 @@ return new class extends Migration
         Schema::create('plans', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->integer('traffic');
             $table->text('description')->nullable();
-            $table->unsignedInteger('amount');
-            $table->string('currency', 3)->default('USD');
-            $table->string('interval_unit');
-            $table->unsignedTinyInteger('interval_count')->default(1);
+            $table->unsignedInteger('price');
+            $table->integer('days')->default(30);
             $table->boolean('is_active')->default(true);
-            $table->string('provider')->default('fake');
-            $table->string('provider_price_id')->nullable();
             $table->timestamps();
         });
     }

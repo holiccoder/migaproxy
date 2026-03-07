@@ -5,6 +5,8 @@ namespace App\Providers\Filament;
 use App\Filament\Widgets\DashboardStatsOverview;
 use App\Filament\Widgets\OrdersChart;
 use App\Filament\Widgets\UserRegistrationsChart;
+use App\Models\Admin;
+use DutchCodingCompany\FilamentDeveloperLogins\FilamentDeveloperLoginsPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -31,6 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard('admin')
             ->authPasswordBroker('admins')
             ->login()
+            ->plugins([
+                FilamentDeveloperLoginsPlugin::make()
+                    ->enabled(app()->environment('local'))
+                    ->modelClass(Admin::class)
+                    ->users(fn (): array => Admin::query()->pluck('email', 'name')->all()),
+            ])
             ->colors([
                 'primary' => Color::Amber,
             ])

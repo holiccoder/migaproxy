@@ -34,8 +34,7 @@ test('checkout stores affiliate attribution on order', function () {
     ]);
     $buyer = User::factory()->create();
     $plan = Plan::factory()->create([
-        'amount' => 10000,
-        'currency' => 'USD',
+        'price' => 10000,
     ]);
 
     Sanctum::actingAs($buyer);
@@ -70,8 +69,7 @@ test('successful payment webhook creates affiliate conversion', function () {
 
     $buyer = User::factory()->create();
     $plan = Plan::factory()->create([
-        'amount' => 15000,
-        'currency' => 'USD',
+        'price' => 15000,
     ]);
 
     Sanctum::actingAs($buyer);

@@ -22,7 +22,7 @@ class PaymentService
     {
         $coupon = $this->resolveCoupon($couponCode);
         $affiliate = $this->affiliateService->resolveAffiliate($affiliateCode, $user);
-        $subtotal = $plan->amount;
+        $subtotal = $plan->price;
         $discountTotal = $coupon?->calculateDiscount($subtotal) ?? 0;
         $total = max(0, $subtotal - $discountTotal);
 
@@ -41,7 +41,7 @@ class PaymentService
             'subtotal' => $subtotal,
             'discount_total' => $discountTotal,
             'total' => $total,
-            'currency' => $plan->currency,
+            'currency' => 'USD',
             'checkout_url' => null,
             'metadata' => [],
             'paid_at' => null,
@@ -137,7 +137,7 @@ class PaymentService
         }
 
         $startsAt = now();
-        $endsAt = now()->addMonthsNoOverflow($order->plan->intervalInMonths());
+        $endsAt = now()->addDays($order->plan->durationInDays());
 
         $subscription->fill([
             'user_id' => $order->user_id,

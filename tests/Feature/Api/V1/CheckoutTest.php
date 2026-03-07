@@ -9,8 +9,7 @@ use Laravel\Sanctum\Sanctum;
 test('authenticated user can create checkout order', function () {
     $user = User::factory()->create();
     $plan = Plan::factory()->create([
-        'amount' => 19900,
-        'currency' => 'USD',
+        'price' => 19900,
     ]);
 
     Sanctum::actingAs($user);
@@ -42,8 +41,7 @@ test('authenticated user can create checkout order', function () {
 test('checkout applies percentage coupon discount', function () {
     $user = User::factory()->create();
     $plan = Plan::factory()->create([
-        'amount' => 20000,
-        'currency' => 'USD',
+        'price' => 20000,
     ]);
     $coupon = Coupon::factory()->create([
         'code' => 'SAVE10',
@@ -71,8 +69,7 @@ test('checkout applies percentage coupon discount', function () {
 test('checkout applies fixed coupon and never goes below zero', function () {
     $user = User::factory()->create();
     $plan = Plan::factory()->create([
-        'amount' => 2000,
-        'currency' => 'USD',
+        'price' => 2000,
     ]);
     $coupon = Coupon::factory()->fixedAmount()->create([
         'code' => 'TAKE5000',
@@ -110,14 +107,13 @@ test('checkout rejects invalid coupon code', function () {
         ->assertJsonPath('message', 'Coupon code is invalid.');
 });
 
-test('checkout rejects inactive plans', function () {
+test('checkout rejects unknown plans', function () {
     $user = User::factory()->create();
-    $plan = Plan::factory()->inactive()->create();
 
     Sanctum::actingAs($user);
 
     $this->postJson('/api/v1/checkout', [
-        'plan_id' => $plan->id,
+        'plan_id' => 999999,
         'provider' => 'fake',
     ])->assertUnprocessable();
 });

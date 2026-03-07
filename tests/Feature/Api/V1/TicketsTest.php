@@ -13,6 +13,7 @@ test('user can create a ticket with initial message', function () {
         'subject' => 'Payment issue',
         'message' => 'My payment did not go through.',
         'priority' => 'high',
+        'category' => 'billing',
     ]);
 
     $response
@@ -24,6 +25,7 @@ test('user can create a ticket with initial message', function () {
     $this->assertDatabaseHas('tickets', [
         'user_id' => $user->id,
         'subject' => 'Payment issue',
+        'category' => 'billing',
         'priority' => 'high',
     ]);
 

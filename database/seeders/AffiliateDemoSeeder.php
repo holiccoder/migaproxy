@@ -25,14 +25,10 @@ class AffiliateDemoSeeder extends Seeder
         }
 
         $plans = Plan::query()
-            ->where('is_active', true)
             ->get();
 
         if ($plans->isEmpty()) {
-            $plans = Plan::factory()->count(3)->create([
-                'currency' => 'USD',
-                'is_active' => true,
-            ]);
+            $plans = Plan::factory()->count(3)->create();
         }
 
         $candidateCustomers = $users->values();
@@ -95,7 +91,7 @@ class AffiliateDemoSeeder extends Seeder
                         AffiliateConversion::STATUS_PAID,
                         AffiliateConversion::STATUS_REJECTED,
                     ]);
-                    $orderTotal = (int) $plan->amount;
+                    $orderTotal = (int) $plan->price;
                     $commissionAmount = $affiliate->calculateCommission($orderTotal);
                     $convertedAt = now()->subDays(40 - $index);
 
@@ -116,7 +112,7 @@ class AffiliateDemoSeeder extends Seeder
                         'subtotal' => $orderTotal,
                         'discount_total' => 0,
                         'total' => $orderTotal,
-                        'currency' => (string) $plan->currency,
+                        'currency' => 'USD',
                         'checkout_url' => null,
                         'metadata' => [],
                         'paid_at' => in_array($status, [AffiliateConversion::STATUS_APPROVED, AffiliateConversion::STATUS_PAID], true)

@@ -5,9 +5,7 @@ namespace App\Filament\Resources\Plans\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class PlansTable
@@ -19,46 +17,24 @@ class PlansTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('slug')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('amount')
+                TextColumn::make('traffic')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('currency')
-                    ->badge()
+                TextColumn::make('price')
+                    ->numeric()
                     ->sortable(),
-                TextColumn::make('interval_unit')
-                    ->label('Interval')
-                    ->badge(),
-                TextColumn::make('interval_count')
+                TextColumn::make('days')
                     ->sortable(),
-                IconColumn::make('is_active')
-                    ->boolean()
-                    ->sortable(),
-                TextColumn::make('provider')
-                    ->badge(),
+                TextColumn::make('description')
+                    ->markdown()
+                    ->limit(60)
+                    ->wrap(),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                SelectFilter::make('is_active')
-                    ->options([
-                        '1' => 'Active',
-                        '0' => 'Inactive',
-                    ]),
-                SelectFilter::make('interval_unit')
-                    ->options([
-                        'month' => 'Month',
-                        'year' => 'Year',
-                    ]),
-                SelectFilter::make('provider')
-                    ->options([
-                        'fake' => 'Fake',
-                    ]),
-            ])
+            ->filters([])
             ->recordActions([
                 EditAction::make(),
             ])
@@ -67,6 +43,6 @@ class PlansTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('amount');
+            ->defaultSort('price');
     }
 }

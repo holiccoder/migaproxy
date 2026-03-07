@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\DashboardMetricsController;
 use App\Http\Controllers\Api\V1\FaqController;
 use App\Http\Controllers\Api\V1\ForgotPasswordController;
 use App\Http\Controllers\Api\V1\HelpCenterController;
+use App\Http\Controllers\Api\V1\IPmartController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentWebhookController;
 use App\Http\Controllers\Api\V1\PlanController;
@@ -88,5 +89,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('posts/{slug}/comments', [PostCommentController::class, 'store'])->name('api.v1.posts.comments.store');
         Route::get('affiliate/dashboard', [AffiliateController::class, 'dashboard'])->name('api.v1.affiliate.dashboard');
         Route::get('affiliate/conversions', [AffiliateController::class, 'conversions'])->name('api.v1.affiliate.conversions');
+
+        Route::prefix('ipmart')->group(function (): void {
+            Route::get('countries', [IPmartController::class, 'getCountries'])->name('api.v1.ipmart.countries');
+            Route::get('states', [IPmartController::class, 'getStates'])->name('api.v1.ipmart.states');
+            Route::get('cities', [IPmartController::class, 'getCities'])->name('api.v1.ipmart.cities');
+            Route::get('protocols', [IPmartController::class, 'getProtocols'])->name('api.v1.ipmart.protocols');
+            Route::get('patterns', [IPmartController::class, 'getPatterns'])->name('api.v1.ipmart.patterns');
+            Route::get('rules', [IPmartController::class, 'getRules'])->name('api.v1.ipmart.rules');
+            Route::get('static-products', [IPmartController::class, 'getStaticProducts'])->name('api.v1.ipmart.static-products');
+            Route::get('static-ip-count', [IPmartController::class, 'getStaticIpCount'])->name('api.v1.ipmart.static-ip-count');
+            Route::get('traffic-history', [IPmartController::class, 'getTrafficHistory'])->name('api.v1.ipmart.traffic-history');
+        });
     });
 });

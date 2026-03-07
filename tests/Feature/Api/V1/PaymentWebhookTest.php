@@ -13,8 +13,7 @@ test('webhook marks order paid and creates subscription', function () {
 
     $user = User::factory()->create();
     $plan = Plan::factory()->create([
-        'interval_unit' => 'month',
-        'interval_count' => 3,
+        'days' => 90,
     ]);
     $order = Order::factory()->create([
         'public_id' => Str::ulid()->toBase32(),
@@ -43,7 +42,7 @@ test('webhook marks order paid and creates subscription', function () {
     expect($subscription)->not->toBeNull();
     expect($subscription?->status)->toBe(Subscription::STATUS_ACTIVE);
     expect($subscription?->starts_at?->equalTo($now))->toBeTrue();
-    expect($subscription?->ends_at?->equalTo($now->copy()->addMonthsNoOverflow(3)))->toBeTrue();
+    expect($subscription?->ends_at?->equalTo($now->copy()->addDays(90)))->toBeTrue();
 
     Carbon::setTestNow();
 });

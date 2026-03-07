@@ -12,8 +12,7 @@ class PlanController extends Controller
     public function index(Request $request): JsonResponse
     {
         $plans = Plan::query()
-            ->where('is_active', true)
-            ->orderBy('amount')
+            ->orderBy('price')
             ->get();
 
         return response()->json([

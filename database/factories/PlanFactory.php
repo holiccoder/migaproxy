@@ -24,22 +24,10 @@ class PlanFactory extends Factory
 
         return [
             'name' => Str::title($name),
-            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 999),
+            'traffic' => fake()->numberBetween(100, 10000),
             'description' => fake()->sentence(),
-            'amount' => fake()->numberBetween(9900, 99900),
-            'currency' => 'USD',
-            'interval_unit' => 'month',
-            'interval_count' => 1,
-            'is_active' => true,
-            'provider' => 'fake',
-            'provider_price_id' => 'price_'.Str::lower(Str::random(12)),
+            'price' => fake()->numberBetween(9900, 99900),
+            'days' => fake()->randomElement([30, 90, 180, 365]),
         ];
-    }
-
-    public function inactive(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => false,
-        ]);
     }
 }
