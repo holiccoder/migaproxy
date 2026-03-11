@@ -6,10 +6,42 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    public function show(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $user->ipmart()->first(['plan_balance', 'proxyName', 'proxyPwd']);
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar_path' => $user->avatar_path,
+            'avatar_url' => $user->avatar_path ? asset('storage/'.$user->avatar_path) : null,
+            'skype_profile' => $user->skype_profile,
+            'telegram_profile' => $user->telegram_profile,
+            'facebook_profile' => $user->facebook_profile,
+            'x_profile' => $user->x_profile,
+            'youtube_profile' => $user->youtube_profile,
+            'instagram_profile' => $user->instagram_profile,
+            'balance' => $user->balance,
+            'plan_balance' => $ipmartAccount?->plan_balance,
+            'proxyName' => $ipmartAccount?->proxyName,
+            'proxyPwd' => $ipmartAccount?->proxyPwd,
+        ]);
+    }
+
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();

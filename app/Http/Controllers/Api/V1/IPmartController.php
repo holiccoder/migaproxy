@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\ChangeProxyPasswordRequest;
 use App\Services\Api\IPmart\DataRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -169,6 +170,45 @@ class IPmartController extends Controller
             'success' => false,
             'message' => 'Failed to fetch proxy options from IPmart',
         ], 500);
+    }
+
+    public function changeProxyPassword(ChangeProxyPasswordRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $ipmartAccount = $request->user()
+            ->ipmart()
+            ->where('ipmart_id', $validated['ipmart_id'])
+            ->first();
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $result = DataRequest::changeProxyPassword($validated['ipmart_id'], $validated['proxyPwd']);
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change proxy password on IPmart.',
+            ], 500);
+        }
+
+        $ipmartAccount->update([
+            'proxyPwd' => $validated['proxyPwd'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Proxy password changed successfully.',
+            'data' => [
+                'ipmart_id' => $ipmartAccount->ipmart_id,
+                'proxyPwd' => $ipmartAccount->proxyPwd,
+            ],
+        ]);
     }
 
     /**
