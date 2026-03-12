@@ -25,8 +25,6 @@ class Subscription extends Model
         'user_id',
         'plan_id',
         'order_id',
-        'provider',
-        'provider_subscription_id',
         'status',
         'starts_at',
         'ends_at',

@@ -35,14 +35,11 @@ class PaymentService
             'coupon_code' => $coupon?->code,
             'affiliate_code' => $affiliate?->code,
             'subscription_id' => null,
-            'provider' => $provider,
-            'provider_reference' => null,
             'status' => Order::STATUS_PENDING,
             'subtotal' => $subtotal,
             'discount_total' => $discountTotal,
             'total' => $total,
             'currency' => 'USD',
-            'checkout_url' => null,
             'metadata' => [],
             'paid_at' => null,
             'failed_at' => null,
@@ -51,8 +48,11 @@ class PaymentService
         $session = $this->gatewayManager->resolve($provider)->createCheckoutSession($user, $plan, $order);
 
         $order->forceFill([
-            'provider_reference' => $session['provider_reference'],
-            'checkout_url' => $session['checkout_url'],
+            'metadata' => array_merge($order->metadata ?? [], [
+                'provider' => $provider,
+                'provider_reference' => $session['provider_reference'],
+                'checkout_url' => $session['checkout_url'],
+            ]),
         ])->save();
 
         return $order->fresh(['plan', 'user', 'coupon', 'affiliate']);
@@ -111,7 +111,6 @@ class PaymentService
 
         $order->forceFill([
             'status' => Order::STATUS_PAID,
-            'provider_reference' => $providerReference ?? $order->provider_reference,
             'paid_at' => now(),
             'failed_at' => null,
         ])->save();
@@ -123,12 +122,8 @@ class PaymentService
         }
 
         $subscription = Subscription::query()
-            ->when($subscriptionReference, function ($query, string $reference): void {
-                $query->where('provider_subscription_id', $reference);
-            })
             ->where('user_id', $order->user_id)
             ->where('plan_id', $order->plan_id)
-            ->where('provider', $order->provider)
             ->latest('id')
             ->first();
 
@@ -143,8 +138,6 @@ class PaymentService
             'user_id' => $order->user_id,
             'plan_id' => $order->plan_id,
             'order_id' => $order->id,
-            'provider' => $order->provider,
-            'provider_subscription_id' => $subscriptionReference ?? 'sub_'.$order->public_id,
             'status' => Subscription::STATUS_ACTIVE,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
@@ -164,11 +157,8 @@ class PaymentService
     private function cancelSubscription(Order $order, ?string $subscriptionReference): void
     {
         $subscription = Subscription::query()
-            ->when($subscriptionReference, function ($query, string $reference): void {
-                $query->where('provider_subscription_id', $reference);
-            })
             ->where('user_id', $order->user_id)
-            ->where('provider', $order->provider)
+            ->where('order_id', $order->id)
             ->latest('id')
             ->first();
 

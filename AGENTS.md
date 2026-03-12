@@ -22,6 +22,14 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - phpunit/phpunit (PHPUNIT) - v12
 - tailwindcss (TAILWINDCSS) - v4
 
+## Skills Activation
+
+This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+
+- `mcp-development` — Develops MCP servers, tools, resources, and prompts. Activates when creating MCP tools, resources, or prompts; setting up AI integrations; debugging MCP connections; working with routes/ai.php; or when the user mentions MCP, Model Context Protocol, AI tools, AI server, or building tools for AI assistants.
+- `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
+- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
+
 ## Conventions
 
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
@@ -36,6 +44,42 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
+
+### Project Overview
+
+This is an API-first headless SaaS application (proxy reseller) with a Filament v5 admin panel. There is no user-facing frontend in this repo — the web routes redirect to `/admin/login`. The user-facing frontend is a separate application that consumes the versioned REST API.
+
+### Dual Authentication
+
+The app uses two separate auth guards and models (`config/auth.php`):
+- **`User`** (`App\Models\User`) — API consumers authenticated via Sanctum tokens. Routes: `routes/api.php`.
+- **`Admin`** (`App\Models\Admin`) — Filament panel users authenticated via the `admin` session guard. Panel: `app/Providers/Filament/AdminPanelProvider.php`.
+
+Never mix these models or guards. API controllers expect `User`; Filament operates on `Admin`.
+
+### Key Directories
+
+- `app/Actions/{Domain}/` — Single-purpose action classes with an `execute()` method (e.g., `AdminReplyToTicket`).
+- `app/Services/{Domain}/` — Stateless service classes for complex business logic (Payments, Affiliates, Api/IPmart).
+- `app/Contracts/Payments/` — Payment gateway interface. New gateways implement `PaymentGateway` and are registered in `config/payments.php`.
+- `app/Http/Controllers/Api/V1/` — All API controllers live under the `V1` namespace. Follow this versioning convention.
+- `app/Http/Requests/Api/V1/` — Form Requests for API validation, using **array-based** rules (not string-based).
+- `app/Filament/Resources/{ModelPlural}/` — Filament resources with subdirectories (see Filament section below).
+- `app/Console/Commands/` — Artisan commands; scheduled in `routes/console.php`.
+- `app/Events/` & `app/Listeners/` — Event-driven integrations (e.g., `UserRegistered` → `CreateIpmartAccountForRegisteredUser`).
+
+### Scheduled Commands
+
+Defined in `routes/console.php`:
+- `subscriptions:expire` — runs daily to expire ended subscriptions.
+- `tickets:close-stale` — runs daily to auto-close inactive tickets.
+
+### External Integrations
+
+- **IPmart API** (`app/Services/Api/IPmart/DataRequest.php`) — proxy provisioning service; auto-creates accounts on user registration.
+- **Social Auth** (`laravel/socialite`) — GitHub, Google, and X (Twitter) OAuth login.
+- **SEO** (`ralphjsmit/laravel-seo`) — attached to blog posts via the `seo` table.
+- **Chinese Payment Gateways** (`yansongda/laravel-pay`, `config/pay.php`) — Alipay, WeChat Pay, UnionPay configuration.
 
 ## Frontend Bundling
 
@@ -183,6 +227,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+- Tests mirror the app structure: `tests/Feature/Api/V1/` for API tests, `tests/Feature/Actions/` for action tests, `tests/Feature/Console/` for command tests. Place new tests in the matching subdirectory.
 
 ## Vite Error
 
@@ -212,6 +257,31 @@ protected function isAccessible(User $user, ?string $path = null): bool
 ### Models
 
 - Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
+- Define status/type values as `public const` on the model (e.g., `Order::STATUS_PENDING`, `Ticket::STATUS_OPEN`, `Subscription::STATUS_ACTIVE`). Always reference these constants — never use raw string literals for status comparisons.
+
+=== filament/v5 rules ===
+
+# Filament v5 Admin Panel
+
+- The admin panel is at `/admin`, uses the `admin` guard, and is configured in `app/Providers/Filament/AdminPanelProvider.php`.
+- Resources live under `app/Filament/Resources/{ModelPlural}/` with this subdirectory structure:
+
+```
+app/Filament/Resources/Plans/
+├── PlanResource.php          # Resource class — delegates form/table to dedicated classes
+├── Pages/
+│   ├── ListPlans.php
+│   ├── CreatePlan.php
+│   └── EditPlan.php
+├── Schemas/
+│   └── PlanForm.php          # Static configure(Schema $schema) method
+└── Tables/
+    └── PlansTable.php        # Static configure(Table $table) method
+```
+
+- Form/table logic is extracted into `Schemas/{Model}Form.php` and `Tables/{ModelPlural}Table.php` with a `public static function configure(...)` method. The resource delegates: `return PlanForm::configure($schema);`.
+- Navigation groups are set via `$navigationGroup` (e.g., `'Billing'`, `'Support'`).
+- IMPORTANT: Always use `search-docs` for Filament v5 API — v5 has significant changes from v3/v4 (e.g., `Filament\Schemas\Schema` replaces `Filament\Forms\Form`).
 
 === mcp/core rules ===
 

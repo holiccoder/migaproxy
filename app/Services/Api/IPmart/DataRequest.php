@@ -308,4 +308,21 @@ class DataRequest
             'end_date' => $end_date,
         ]);
     }
+
+    public static function generateAPILink($apiCntryCode, $id, $cntryCode, $time, $num, $format, $stateName, $cityName)
+    {
+        $instance = new static;
+        $response = $instance->sendRequest('custom/api/getIps', [
+            'apiCntryCode' => $apiCntryCode,
+            'subUserId' => $id,
+            'cntryCode' => $cntryCode,
+            'time' => $time,
+            'num' => $num,
+            'format' => $format,
+            'stateName' => $stateName,
+            'cityName' => $cityName,
+        ]);
+
+        return $response;
+    }
 }

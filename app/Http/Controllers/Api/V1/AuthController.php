@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
@@ -17,17 +18,17 @@ class AuthController extends Controller
         $validated = $request->validated();
 
         $user = User::query()->create($validated);
+        event(new Registered($user));
 
         UserRegistered::dispatch($user, $validated['password']);
 
-        $token = $user->createToken('api-token')->plainTextToken;
-
         return response()->json([
-            'message' => 'User registered successfully.',
+            'message' => 'Registration successful. Please verify your email before logging in.',
             'data' => [
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
+                'user' => array_merge($user->toArray(), [
+                    'email_verified' => $user->hasVerifiedEmail(),
+                ]),
+                'email_verification_required' => true,
             ],
         ], 201);
     }
@@ -46,12 +47,25 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+
+            return response()->json([
+                'message' => 'Please verify your email before logging in.',
+                'email_verification_required' => true,
+            ], 403);
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
-        $ipmartAccount = $user->ipmart()->first(['plan_balance', 'proxyName', 'proxyPwd']);
+        $ipmartAccount = $user->ipmart()->first(['ipmart_id', 'plan_balance', 'proxyName', 'proxyPwd']);
         $userPayload = array_merge($user->toArray(), [
-            'plan_balance' => $ipmartAccount?->plan_balance,
-            'proxyName' => $ipmartAccount?->proxyName,
-            'proxyPwd' => $ipmartAccount?->proxyPwd,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'ipmart' => [
+                'ipmart_id' => $ipmartAccount?->ipmart_id,
+                'proxyName' => $ipmartAccount?->proxyName,
+                'proxyPwd' => $ipmartAccount?->proxyPwd,
+                'plan_balance' => $ipmartAccount?->plan_balance,
+            ],
         ]);
 
         return response()->json([

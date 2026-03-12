@@ -104,8 +104,6 @@ class AffiliateDemoSeeder extends Seeder
                         'coupon_code' => null,
                         'affiliate_code' => $affiliate->code,
                         'subscription_id' => null,
-                        'provider' => 'fake',
-                        'provider_reference' => 'fake_checkout_'.Str::lower(Str::random(12)),
                         'status' => in_array($status, [AffiliateConversion::STATUS_APPROVED, AffiliateConversion::STATUS_PAID], true)
                             ? Order::STATUS_PAID
                             : Order::STATUS_PENDING,
@@ -113,7 +111,6 @@ class AffiliateDemoSeeder extends Seeder
                         'discount_total' => 0,
                         'total' => $orderTotal,
                         'currency' => 'USD',
-                        'checkout_url' => null,
                         'metadata' => [],
                         'paid_at' => in_array($status, [AffiliateConversion::STATUS_APPROVED, AffiliateConversion::STATUS_PAID], true)
                             ? $convertedAt

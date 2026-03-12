@@ -30,7 +30,6 @@ test('authenticated user can create checkout order', function () {
     $this->assertDatabaseHas('orders', [
         'user_id' => $user->id,
         'plan_id' => $plan->id,
-        'provider' => 'fake',
         'status' => Order::STATUS_PENDING,
         'subtotal' => 19900,
         'discount_total' => 0,

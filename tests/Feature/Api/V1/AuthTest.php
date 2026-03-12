@@ -2,9 +2,13 @@
 
 use App\Models\Ipmart;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
-test('register creates a user and returns token', function () {
+test('register creates an unverified user and sends a verification email', function () {
+    Notification::fake();
+
     $requestedIpmartEmail = null;
 
     Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest')
@@ -38,15 +42,23 @@ test('register creates a user and returns token', function () {
 
     $response
         ->assertCreated()
-        ->assertJsonPath('message', 'User registered successfully.')
+        ->assertJsonPath('message', 'Registration successful. Please verify your email before logging in.')
         ->assertJsonPath('data.user.email', 'jane@example.com')
-        ->assertJsonPath('data.token_type', 'Bearer');
+        ->assertJsonPath('data.user.email_verified', false)
+        ->assertJsonPath('data.email_verification_required', true)
+        ->assertJsonMissingPath('data.token');
 
     $userId = (string) $response->json('data.user.id');
 
     $this->assertDatabaseHas('users', [
         'email' => 'jane@example.com',
+        'email_verified_at' => null,
     ]);
+
+    $user = User::query()->find($userId);
+    expect($user)->toBeInstanceOf(User::class);
+
+    Notification::assertSentTo($user, VerifyEmail::class);
 
     expect($requestedIpmartEmail)->not->toBeNull();
     expect($requestedIpmartEmail)->not->toBe('jane@example.com');
@@ -61,6 +73,25 @@ test('register creates a user and returns token', function () {
         'login_name' => 'o5Hj8Pj',
         'passwd' => 'benny04asddddlsi',
     ]);
+});
+
+test('login requires a verified email address', function () {
+    Notification::fake();
+
+    $user = User::factory()->unverified()->create([
+        'email' => 'jane@example.com',
+        'password' => Hash::make('password123'),
+    ]);
+
+    $this->postJson('/api/v1/login', [
+        'email' => 'jane@example.com',
+        'password' => 'password123',
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Please verify your email before logging in.')
+        ->assertJsonPath('email_verification_required', true);
+
+    Notification::assertSentTo($user, VerifyEmail::class);
 });
 
 test('login returns token for valid credentials', function () {
@@ -89,9 +120,14 @@ test('login returns token for valid credentials', function () {
         ->assertOk()
         ->assertJsonPath('message', 'Login successful.')
         ->assertJsonPath('data.user.id', $user->id)
-        ->assertJsonPath('data.user.plan_balance', 256)
-        ->assertJsonPath('data.user.proxyName', 'proxy-user-name')
-        ->assertJsonPath('data.user.proxyPwd', 'proxy-user-password')
+        ->assertJsonPath('data.user.email_verified', true)
+        ->assertJsonPath('data.user.ipmart.ipmart_id', 'ipmart-login-1')
+        ->assertJsonPath('data.user.ipmart.plan_balance', 256)
+        ->assertJsonPath('data.user.ipmart.proxyName', 'proxy-user-name')
+        ->assertJsonPath('data.user.ipmart.proxyPwd', 'proxy-user-password')
+        ->assertJsonMissingPath('data.user.plan_balance')
+        ->assertJsonMissingPath('data.user.proxyName')
+        ->assertJsonMissingPath('data.user.proxyPwd')
         ->assertJsonPath('data.token_type', 'Bearer');
 });
 

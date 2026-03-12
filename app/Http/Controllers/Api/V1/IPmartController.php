@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ChangeProxyPasswordRequest;
+use App\Http\Requests\Api\V1\GetProxyApiLinkRequest;
+use App\Http\Requests\Api\V1\GetProxyCitiesRequest;
+use App\Http\Requests\Api\V1\GetProxyStatesRequest;
 use App\Services\Api\IPmart\DataRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,13 +36,11 @@ class IPmartController extends Controller
     /**
      * Get states/provinces for a country
      */
-    public function getStates(Request $request): JsonResponse
+    public function getStates(GetProxyStatesRequest $request): JsonResponse
     {
-        $request->validate([
-            'country_code' => 'required|string|size:2',
-        ]);
+        $validated = $request->validated();
 
-        $result = DataRequest::chooseArea(1, $request->country_code);
+        $result = DataRequest::chooseArea(1, $validated['country_code']);
 
         if ($result) {
             return response()->json([
@@ -57,14 +58,11 @@ class IPmartController extends Controller
     /**
      * Get cities for a state
      */
-    public function getCities(Request $request): JsonResponse
+    public function getCities(GetProxyCitiesRequest $request): JsonResponse
     {
-        $request->validate([
-            'country_code' => 'required|string|size:2',
-            'state' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
-        $result = DataRequest::chooseArea(2, $request->country_code, $request->state);
+        $result = DataRequest::chooseArea(2, $validated['country_code'], $validated['state']);
 
         if ($result) {
             return response()->json([
@@ -284,5 +282,37 @@ class IPmartController extends Controller
             'success' => false,
             'message' => 'Failed to fetch traffic history from IPmart',
         ], 500);
+    }
+
+    /**
+     * Get proxy API link for rotating residential proxies
+     */
+    public function getProxyAPILink(GetProxyApiLinkRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $result = DataRequest::generateAPILink(
+            $validated['apiCntryCode'] ?? 'CA',
+            $validated['subUserId'],
+            $validated['cntryCode'],
+            $validated['time'],
+            $validated['num'],
+            $validated['format'],
+            $validated['stateName'] ?? null,
+            $validated['cityName'] ?? null,
+        );
+
+        if ($result) {
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to generate proxy API link from IPmart',
+        ], 500);
+
     }
 }

@@ -38,14 +38,9 @@ class OrderForm
                 TextInput::make('coupon_code')
                     ->maxLength(64),
                 Select::make('subscription_id')
-                    ->relationship('subscription', 'provider_subscription_id')
+                    ->relationship('subscription', 'id')
                     ->searchable()
                     ->preload(),
-                TextInput::make('provider')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('provider_reference')
-                    ->maxLength(255),
                 Select::make('status')
                     ->options([
                         Order::STATUS_PENDING => 'Pending',
@@ -70,10 +65,6 @@ class OrderForm
                     ->required()
                     ->length(3)
                     ->default('USD'),
-                TextInput::make('checkout_url')
-                    ->url()
-                    ->maxLength(2048)
-                    ->columnSpanFull(),
                 KeyValue::make('metadata')
                     ->nullable()
                     ->columnSpanFull(),

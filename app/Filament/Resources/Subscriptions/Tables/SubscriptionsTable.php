@@ -15,11 +15,10 @@ class SubscriptionsTable
     {
         return $table
             ->columns([
-                TextColumn::make('provider_subscription_id')
-                    ->label('Subscription')
+                TextColumn::make('id')
+                    ->label('ID')
                     ->searchable()
-                    ->sortable()
-                    ->copyable(),
+                    ->sortable(),
                 TextColumn::make('user.email')
                     ->searchable()
                     ->sortable(),
@@ -28,8 +27,6 @@ class SubscriptionsTable
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
-                TextColumn::make('provider')
-                    ->badge(),
                 TextColumn::make('starts_at')
                     ->dateTime()
                     ->sortable(),
@@ -47,10 +44,6 @@ class SubscriptionsTable
                         'active' => 'Active',
                         'past_due' => 'Past Due',
                         'canceled' => 'Canceled',
-                    ]),
-                SelectFilter::make('provider')
-                    ->options([
-                        'fake' => 'Fake',
                     ]),
             ])
             ->recordActions([

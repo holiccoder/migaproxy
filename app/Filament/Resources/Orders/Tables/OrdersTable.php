@@ -31,9 +31,6 @@ class OrdersTable
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
-                TextColumn::make('provider')
-                    ->badge()
-                    ->sortable(),
                 TextColumn::make('subtotal')
                     ->label('Subtotal')
                     ->numeric()
@@ -61,10 +58,6 @@ class OrdersTable
                         'pending' => 'Pending',
                         'paid' => 'Paid',
                         'failed' => 'Failed',
-                    ]),
-                SelectFilter::make('provider')
-                    ->options([
-                        'fake' => 'Fake',
                     ]),
             ])
             ->recordActions([

@@ -19,7 +19,6 @@ test('webhook marks order paid and creates subscription', function () {
         'public_id' => Str::ulid()->toBase32(),
         'user_id' => $user->id,
         'plan_id' => $plan->id,
-        'provider' => 'fake',
         'status' => Order::STATUS_PENDING,
     ]);
 
@@ -54,7 +53,6 @@ test('webhook marks order failed on payment failure', function () {
         'public_id' => Str::ulid()->toBase32(),
         'user_id' => $user->id,
         'plan_id' => $plan->id,
-        'provider' => 'fake',
         'status' => Order::STATUS_PENDING,
     ]);
 

@@ -29,7 +29,7 @@ class AffiliateConversionForm
                     ->searchable()
                     ->preload(),
                 Select::make('subscription_id')
-                    ->relationship('subscription', 'provider_subscription_id')
+                    ->relationship('subscription', 'id')
                     ->searchable()
                     ->preload(),
                 TextInput::make('amount')

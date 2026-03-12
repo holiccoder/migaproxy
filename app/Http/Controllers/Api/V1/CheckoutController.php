@@ -44,7 +44,7 @@ class CheckoutController extends Controller
             'message' => 'Checkout session created successfully.',
             'data' => [
                 'order' => $order,
-                'checkout_url' => $order->checkout_url,
+                'checkout_url' => $order->metadata['checkout_url'] ?? null,
             ],
         ], 201);
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CmsPageController;
 use App\Http\Controllers\Api\V1\DashboardMetricsController;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\FaqController;
 use App\Http\Controllers\Api\V1\ForgotPasswordController;
 use App\Http\Controllers\Api\V1\HelpCenterController;
@@ -28,6 +29,13 @@ Route::prefix('v1')->group(function (): void {
     Route::post('register', [AuthController::class, 'register'])->name('api.v1.auth.register');
     Route::post('login', [AuthController::class, 'login'])->name('api.v1.auth.login');
     Route::post('forgot-password', [ForgotPasswordController::class, 'store'])->name('api.v1.auth.forgot-password');
+    Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+    Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->whereNumber('id')
+        ->name('verification.verify');
 
     Route::prefix('affiliate')->group(function (): void {
         Route::get('track', [AffiliateTrackingController::class, 'track'])->name('api.v1.affiliate.track');
@@ -66,7 +74,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::post('payments/webhooks/{provider}', [PaymentWebhookController::class, 'store'])->name('api.v1.payments.webhook');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'verified'])->group(function (): void {
         Route::get('dashboard/metrics', [DashboardMetricsController::class, 'show'])->name('api.v1.dashboard.metrics');
         Route::get('orders', [OrderController::class, 'index'])->name('api.v1.orders.index');
 
@@ -100,10 +108,13 @@ Route::prefix('v1')->group(function (): void {
 
         Route::prefix('ipmart')->controller(IPmartController::class)->group(function (): void {
             Route::get('proxy-options', 'getProxyOptions')->name('api.v1.ipmart.proxy-options');
+            Route::get('proxy-states', 'getStates')->name('api.v1.ipmart.proxy-states');
+            Route::get('proxy-cities', 'getCities')->name('api.v1.ipmart.proxy-cities');
             Route::post('change-proxy-password', 'changeProxyPassword')->name('api.v1.ipmart.change-proxy-password');
             Route::get('static-products', 'getStaticProducts')->name('api.v1.ipmart.static-products');
             Route::get('static-ip-count', 'getStaticIpCount')->name('api.v1.ipmart.static-ip-count');
             Route::get('traffic-history', 'getTrafficHistory')->name('api.v1.ipmart.traffic-history');
+            Route::get('proxy-api-link', 'getProxyAPILink')->name('api.v1.ipmart.proxy-api-link');
         });
     });
 });

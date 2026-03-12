@@ -20,7 +20,7 @@ class SubscriptionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Billing';
 
-    protected static ?string $recordTitleAttribute = 'provider_subscription_id';
+    protected static ?string $recordTitleAttribute = 'id';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 

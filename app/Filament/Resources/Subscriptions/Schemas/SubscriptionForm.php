@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Subscriptions\Schemas;
 use App\Models\Subscription;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class SubscriptionForm
@@ -28,11 +27,6 @@ class SubscriptionForm
                     ->relationship('order', 'public_id')
                     ->searchable()
                     ->preload(),
-                TextInput::make('provider')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('provider_subscription_id')
-                    ->maxLength(255),
                 Select::make('status')
                     ->options([
                         Subscription::STATUS_ACTIVE => 'Active',
