@@ -23,7 +23,6 @@ class CmsPageFactory extends Factory
         return [
             'title' => $title,
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(1000, 9999),
-            'excerpt' => fake()->optional()->paragraph(),
             'content' => fake()->paragraphs(6, true),
             'status' => CmsPage::STATUS_PUBLISHED,
             'published_at' => now()->subDays(fake()->numberBetween(1, 45)),

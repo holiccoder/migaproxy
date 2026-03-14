@@ -18,13 +18,12 @@ class CmsPageResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'slug' => $this->slug,
-            'excerpt' => $this->excerpt,
             'content' => $this->content,
             'status' => $this->status,
             'published_at' => $this->published_at?->toIso8601String(),
             'seo' => $this->whenLoaded('seo', function (): array {
                 $title = $this->seo->title ?? $this->meta_title ?? $this->title;
-                $description = $this->seo->description ?? $this->meta_description ?? $this->excerpt;
+                $description = $this->seo->description ?? $this->meta_description;
                 $image = $this->seo->image;
                 $canonicalUrl = $this->seo->canonical_url;
 

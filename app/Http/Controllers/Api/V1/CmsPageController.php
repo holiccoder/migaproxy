@@ -21,7 +21,6 @@ class CmsPageController extends Controller
                 $query->where(function (Builder $query) use ($search): void {
                     $query
                         ->where('title', 'like', "%{$search}%")
-                        ->orWhere('excerpt', 'like', "%{$search}%")
                         ->orWhere('content', 'like', "%{$search}%");
                 });
             })

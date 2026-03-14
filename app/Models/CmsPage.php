@@ -24,7 +24,6 @@ class CmsPage extends Model
     protected $fillable = [
         'title',
         'slug',
-        'excerpt',
         'content',
         'status',
         'published_at',

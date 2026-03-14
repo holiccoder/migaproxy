@@ -29,9 +29,6 @@ class CmsPageForm
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
-                Textarea::make('excerpt')
-                    ->maxLength(500)
-                    ->columnSpanFull(),
                 MarkdownEditor::make('content')
                     ->required()
                     ->columnSpanFull(),

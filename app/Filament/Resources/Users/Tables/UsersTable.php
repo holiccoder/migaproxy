@@ -14,12 +14,17 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification as FilamentNotification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
+                'currentSubscription.plan',
+                'ipmart',
+            ]))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -27,6 +32,15 @@ class UsersTable
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('plan')
+                    ->label('Plan')
+                    ->getStateUsing(fn (User $record): string => $record->currentSubscription?->plan?->name ?? '-')
+                    ->toggleable(),
+                TextColumn::make('available_traffic')
+                    ->label('Available Traffic')
+                    ->getStateUsing(fn (User $record): int => (int) ($record->ipmart?->plan_balance ?? 0))
+                    ->numeric()
+                    ->toggleable(),
                 TextColumn::make('ipmart.ipmart_id')
                     ->label('IPmart ID')
                     ->searchable()

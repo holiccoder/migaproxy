@@ -13,4 +13,4 @@
 11. create a coupon system for discounts that when a user uses a coupon, the coupon is applied to the order, the coupon can be a percentage discounts or fixed amount when adding --done
 12. third party login --done
 13. stale tickets are closed automatically after 3 days of inactivity -- done
-14. 
+14. check this may be right --done
