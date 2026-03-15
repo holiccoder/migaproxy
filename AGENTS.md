@@ -47,7 +47,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 ### Project Overview
 
-This is an API-first headless SaaS application (proxy reseller) with a Filament v5 admin panel. There is no user-facing frontend in this repo — the web routes redirect to `/admin/login`. The user-facing frontend is a separate application that consumes the versioned REST API.
+This is an API-first headless SaaS application (proxy reseller) with a Filament v5 admin panel. The user-facing frontend is a Next.js app in `frontend/` that consumes the versioned REST API, while Laravel web routes in this app still redirect to `/admin/login`.
 
 ### Dual Authentication
 
@@ -67,6 +67,13 @@ Never mix these models or guards. API controllers expect `User`; Filament operat
 - `app/Filament/Resources/{ModelPlural}/` — Filament resources with subdirectories (see Filament section below).
 - `app/Console/Commands/` — Artisan commands; scheduled in `routes/console.php`.
 - `app/Events/` & `app/Listeners/` — Event-driven integrations (e.g., `UserRegistered` → `CreateIpmartAccountForRegisteredUser`).
+- `frontend/` — Next.js frontend application.
+
+### Frontend Scope (Next.js)
+
+- For frontend tasks, inspect and modify files under `frontend/**` by default.
+- Run frontend commands from `frontend/` (for example: `npm run dev`, `npm run build`, `npm run lint`, `npm run test`).
+- Do not edit Laravel backend files (`app/`, `routes/`, `config/`, `database/`, `resources/`) unless the task explicitly requires backend/API changes.
 
 ### Scheduled Commands
 
