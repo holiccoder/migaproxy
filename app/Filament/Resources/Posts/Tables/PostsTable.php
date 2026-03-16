@@ -62,6 +62,6 @@ class PostsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('published_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

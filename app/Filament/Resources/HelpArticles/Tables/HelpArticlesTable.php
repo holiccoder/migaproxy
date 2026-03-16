@@ -57,6 +57,6 @@ class HelpArticlesTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('title');
+            ->defaultSort('id', 'desc');
     }
 }

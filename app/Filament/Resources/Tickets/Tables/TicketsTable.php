@@ -152,6 +152,6 @@ HTML;
                     }),
                 EditAction::make(),
             ])
-            ->defaultSort('updated_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

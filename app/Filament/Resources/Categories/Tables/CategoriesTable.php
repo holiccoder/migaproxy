@@ -36,6 +36,6 @@ class CategoriesTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('name');
+            ->defaultSort('id', 'desc');
     }
 }

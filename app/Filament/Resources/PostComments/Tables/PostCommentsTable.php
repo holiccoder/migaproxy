@@ -54,6 +54,6 @@ class PostCommentsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

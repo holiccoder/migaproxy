@@ -4,29 +4,25 @@ namespace App\Actions\Notifications;
 
 use App\Models\Admin;
 use App\Models\User;
-use App\Notifications\AdminPrivateMessageNotification;
 
 class SendBulkPrivateMessage
 {
-    public function execute(?Admin $sender, string $subject, string $message): int
+    public function execute(?Admin $sender, string $subject, string $message, bool $sendToEmail = false): int
     {
-        $sentCount = 0;
+        $recipientCount = User::query()->count();
 
-        User::query()
-            ->select(['id', 'name', 'email'])
-            ->chunkById(200, function ($users) use ($sender, $subject, $message, &$sentCount): void {
-                foreach ($users as $user) {
-                    $user->notify(new AdminPrivateMessageNotification(
-                        subject: $subject,
-                        message: $message,
-                        adminId: $sender?->id,
-                        adminName: $sender?->name
-                    ));
+        if ($recipientCount === 0) {
+            return 0;
+        }
 
-                    $sentCount++;
-                }
-            });
+        SendBulkPrivateMessageJob::dispatch(
+            adminId: $sender?->id,
+            adminName: $sender?->name,
+            subject: $subject,
+            message: $message,
+            sendToEmail: $sendToEmail,
+        );
 
-        return $sentCount;
+        return $recipientCount;
     }
 }

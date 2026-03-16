@@ -114,6 +114,9 @@ Route::prefix('v1')->group(function (): void {
             Route::get('static-products', 'getStaticProducts')->name('api.v1.ipmart.static-products');
             Route::get('static-ip-count', 'getStaticIpCount')->name('api.v1.ipmart.static-ip-count');
             Route::get('traffic-history', 'getTrafficHistory')->name('api.v1.ipmart.traffic-history');
+            Route::get('traffic-history/{userId}', 'getTrafficHistoryByUserId')
+                ->whereNumber('userId')
+                ->name('api.v1.ipmart.traffic-history-by-user');
             Route::get('proxy-api-link', 'getProxyAPILink')->name('api.v1.ipmart.proxy-api-link');
         });
     });

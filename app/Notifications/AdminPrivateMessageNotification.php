@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AdminPrivateMessageNotification extends Notification
@@ -14,6 +15,7 @@ class AdminPrivateMessageNotification extends Notification
         public string $message,
         public ?int $adminId = null,
         public ?string $adminName = null,
+        public bool $sendToEmail = false,
     ) {}
 
     /**
@@ -21,7 +23,26 @@ class AdminPrivateMessageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $channels = ['database'];
+
+        if ($this->sendToEmail) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $mailMessage = (new MailMessage)
+            ->subject($this->subject)
+            ->line($this->message);
+
+        if (filled($this->adminName)) {
+            $mailMessage->line("Sent by {$this->adminName}.");
+        }
+
+        return $mailMessage;
     }
 
     /**

@@ -43,6 +43,6 @@ class PlansTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('price');
+            ->defaultSort('id', 'desc');
     }
 }

@@ -7,6 +7,8 @@ use App\Http\Requests\Api\V1\ChangeProxyPasswordRequest;
 use App\Http\Requests\Api\V1\GetProxyApiLinkRequest;
 use App\Http\Requests\Api\V1\GetProxyCitiesRequest;
 use App\Http\Requests\Api\V1\GetProxyStatesRequest;
+use App\Models\TrafficHistory;
+use App\Models\User;
 use App\Services\Api\IPmart\DataRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -282,6 +284,99 @@ class IPmartController extends Controller
             'success' => false,
             'message' => 'Failed to fetch traffic history from IPmart',
         ], 500);
+    }
+
+    public function getTrafficHistoryByUserId(Request $request, int $userId): JsonResponse
+    {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ($authenticatedUser->id !== $userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to access this traffic history.',
+            ], 403);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $trafficHistories = TrafficHistory::query()
+            ->where('ipmart_id', $ipmartAccount->ipmart_id)
+            ->latest('request_date')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => $trafficHistories,
+        ]);
+    }
+
+    public function orderForCustomer(int $userId, int $amount): JsonResponse
+    {
+        if ($amount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amount must be greater than zero.',
+            ], 422);
+        }
+
+        $user = User::query()
+            ->with('ipmart')
+            ->find($userId);
+
+        if (! $user instanceof User) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $ipmartAccount = $user->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $result = DataRequest::payForCustomerUsingBalance($ipmartAccount->ipmart_id, $amount);
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to place IPmart order for customer.',
+            ], 500);
+        }
+
+        if (is_array($result) && array_key_exists('plan_balance', $result)) {
+            $ipmartAccount->update([
+                'plan_balance' => (int) $result['plan_balance'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Customer order placed successfully.',
+            'data' => [
+                'user_id' => $user->id,
+                'ipmart_id' => $ipmartAccount->ipmart_id,
+                'amount' => $amount,
+                'order' => $result,
+            ],
+        ]);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Actions\Notifications\SendBulkPrivateMessage;
 use App\Models\Admin;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -43,6 +44,11 @@ class SendBulkNotification extends Page implements HasForms
                 TextInput::make('subject')
                     ->required()
                     ->maxLength(255),
+                Radio::make('send_to_email')
+                    ->hiddenLabel()
+                    ->options([
+                        1 => 'Send to its email',
+                    ]),
                 Textarea::make('message')
                     ->required()
                     ->maxLength(5000)
@@ -62,12 +68,13 @@ class SendBulkNotification extends Page implements HasForms
             sender: $sender,
             subject: $validated['subject'],
             message: $validated['message'],
+            sendToEmail: ((int) ($validated['send_to_email'] ?? 0)) === 1,
         );
 
         $this->form->fill();
 
         Notification::make()
-            ->title("Notification sent to {$sentCount} user(s).")
+            ->title("Notification queued for {$sentCount} user(s).")
             ->success()
             ->send();
     }

@@ -35,6 +35,7 @@ class Order extends Model
         'total',
         'currency',
         'metadata',
+        'ipmart_order',
         'paid_at',
         'failed_at',
     ];
@@ -49,6 +50,7 @@ class Order extends Model
             'discount_total' => 'integer',
             'total' => 'integer',
             'metadata' => 'array',
+            'ipmart_order' => 'array',
             'paid_at' => 'datetime',
             'failed_at' => 'datetime',
         ];

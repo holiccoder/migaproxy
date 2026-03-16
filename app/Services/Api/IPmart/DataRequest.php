@@ -285,7 +285,7 @@ class DataRequest
         return $response;
     }
 
-    public static function payForCustomerUsingBalance($id, $capacity, $orderToken)
+    public static function payForCustomerUsingBalance($id, $capacity)
     {
         $instance = new static;
         $orderToken = Str::random(12);
@@ -321,6 +321,27 @@ class DataRequest
             'format' => $format,
             'stateName' => $stateName,
             'cityName' => $cityName,
+        ]);
+
+        return $response;
+    }
+
+    /** check ipmart order */
+    public static function checkOrder($order_id)
+    {
+        $instance = new static;
+        $response = $instance->sendRequest('custom/check_order', [
+            'id' => $order_id,
+        ]);
+
+        return $response;
+    }
+
+    public static function getAvailableTrafficById($id)
+    {
+        $instance = new static;
+        $response = $instance->sendRequest('custom/get_available_traffic', [
+            'id' => $id,
         ]);
 
         return $response;

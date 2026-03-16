@@ -42,6 +42,6 @@ class HelpCategoriesTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('title');
+            ->defaultSort('id', 'desc');
     }
 }

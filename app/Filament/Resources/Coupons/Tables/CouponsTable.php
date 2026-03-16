@@ -62,6 +62,6 @@ class CouponsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

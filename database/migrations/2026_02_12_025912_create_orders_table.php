@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('subscription_id')->nullable();
             $table->string('provider');
             $table->string('provider_reference')->nullable();
-            $table->string('status');
+            $table->string('status')->default('pending');
             $table->unsignedInteger('total');
             $table->string('currency', 3);
             $table->text('checkout_url')->nullable();

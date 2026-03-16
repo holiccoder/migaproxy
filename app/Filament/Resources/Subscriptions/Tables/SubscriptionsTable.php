@@ -54,6 +54,6 @@ class SubscriptionsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('starts_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Affiliates\AffiliateService;
+use App\Services\Api\IPmart\DataRequest;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -71,7 +72,7 @@ class PaymentService
         }
 
         $order = Order::query()
-            ->with(['plan', 'affiliate'])
+            ->with(['plan', 'affiliate', 'user.ipmart'])
             ->where('public_id', $orderPublicId)
             ->first();
 
@@ -115,6 +116,10 @@ class PaymentService
             'failed_at' => null,
         ])->save();
 
+        if ($wasUnpaid) {
+            $this->storeIpmartOrderPayload($order);
+        }
+
         if ($wasUnpaid && $order->coupon_id !== null) {
             Coupon::query()
                 ->where('id', $order->coupon_id)
@@ -152,6 +157,27 @@ class PaymentService
         if ($wasUnpaid) {
             $this->affiliateService->createConversionFromOrder($order);
         }
+    }
+
+    private function storeIpmartOrderPayload(Order $order): void
+    {
+        $order->loadMissing(['plan', 'user.ipmart']);
+
+        $ipmartAccount = $order->user?->ipmart;
+
+        if (! $ipmartAccount) {
+            return;
+        }
+
+        $ipmartOrder = DataRequest::payForCustomerUsingBalance($ipmartAccount->ipmart_id, $order->plan->traffic);
+
+        if (! is_array($ipmartOrder)) {
+            return;
+        }
+
+        $order->forceFill([
+            'ipmart_order' => $ipmartOrder,
+        ])->save();
     }
 
     private function cancelSubscription(Order $order, ?string $subscriptionReference): void

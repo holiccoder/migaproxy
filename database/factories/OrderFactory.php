@@ -37,6 +37,7 @@ class OrderFactory extends Factory
             'total' => fake()->numberBetween(9900, 99900),
             'currency' => 'USD',
             'metadata' => [],
+            'ipmart_order' => null,
             'paid_at' => null,
             'failed_at' => null,
         ];
