@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AffiliateController;
 use App\Http\Controllers\Api\V1\AffiliateTrackingController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BrandingSettingController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CmsPageController;
 use App\Http\Controllers\Api\V1\DashboardMetricsController;
@@ -52,6 +53,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::get('plans', [PlanController::class, 'index'])->name('api.v1.plans.index');
     Route::get('faq', [FaqController::class, 'index'])->name('api.v1.faq.index');
+    Route::get('settings/branding', [BrandingSettingController::class, 'show'])->name('api.v1.settings.branding.show');
 
     Route::prefix('help-center')->controller(HelpCenterController::class)->group(function (): void {
         Route::get('categories', 'categories')->name('api.v1.help-center.categories');
