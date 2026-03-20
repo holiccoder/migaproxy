@@ -109,6 +109,10 @@ Route::prefix('v1')->group(function (): void {
         });
 
         Route::prefix('ipmart')->controller(IPmartController::class)->group(function (): void {
+            Route::get('user-info', 'getUserInfo')->name('api.v1.ipmart.user-info');
+            Route::get('proxy-info', 'getProxyInfo')->name('api.v1.ipmart.proxy-info');
+            Route::get('generate-test-link', 'generateTestLink')->name('api.v1.ipmart.generate-test-link');
+            Route::post('pay-for-customer-using-balance', 'payForCustomerUsingBalance')->name('api.v1.ipmart.pay-for-customer-using-balance');
             Route::get('proxy-options', 'getProxyOptions')->name('api.v1.ipmart.proxy-options');
             Route::get('proxy-states', 'getStates')->name('api.v1.ipmart.proxy-states');
             Route::get('proxy-cities', 'getCities')->name('api.v1.ipmart.proxy-cities');

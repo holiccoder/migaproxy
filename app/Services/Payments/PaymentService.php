@@ -2,13 +2,16 @@
 
 namespace App\Services\Payments;
 
+use App\Http\Controllers\Api\V1\IPmartController;
+use App\Models\BalanceHistory;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Affiliates\AffiliateService;
-use App\Services\Api\IPmart\DataRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -57,6 +60,100 @@ class PaymentService
         ])->save();
 
         return $order->fresh(['plan', 'user', 'coupon', 'affiliate']);
+    }
+
+    /**
+     * @return array{order: Order, subscription: Subscription|null, wallet_balance: int}
+     */
+    public function purchaseWithWallet(
+        User $user,
+        Plan $plan,
+        string $paymentMethod = 'wallet',
+        ?string $couponCode = null,
+        ?string $affiliateCode = null,
+        ?string $orderComment = null,
+    ): array {
+        if ($paymentMethod !== 'wallet') {
+            throw new InvalidArgumentException('Only wallet payment is currently supported.');
+        }
+
+        return DB::transaction(function () use ($user, $plan, $paymentMethod, $couponCode, $affiliateCode, $orderComment): array {
+            $lockedUser = User::query()
+                ->whereKey($user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedUser) {
+                throw new InvalidArgumentException('User account is not available.');
+            }
+
+            $coupon = $this->resolveCoupon($couponCode);
+            $affiliate = $this->affiliateService->resolveAffiliate($affiliateCode, $lockedUser);
+            $subtotal = $plan->price;
+            $discountTotal = $coupon?->calculateDiscount($subtotal) ?? 0;
+            $total = max(0, $subtotal - $discountTotal);
+
+            $beforeBalance = (int) $lockedUser->balance;
+
+            if ($beforeBalance < $total) {
+                throw new InvalidArgumentException('Insufficient wallet balance.');
+            }
+
+            $afterBalance = $beforeBalance - $total;
+            $trimmedOrderComment = is_string($orderComment) ? trim($orderComment) : '';
+            $orderMetadata = [
+                'payment_method' => $paymentMethod,
+            ];
+
+            if ($trimmedOrderComment !== '') {
+                $orderMetadata['order_comment'] = $trimmedOrderComment;
+            }
+
+            $order = Order::query()->create([
+                'public_id' => Str::ulid()->toBase32(),
+                'user_id' => $lockedUser->id,
+                'plan_id' => $plan->id,
+                'coupon_id' => $coupon?->id,
+                'affiliate_id' => $affiliate?->id,
+                'coupon_code' => $coupon?->code,
+                'affiliate_code' => $affiliate?->code,
+                'subscription_id' => null,
+                'status' => Order::STATUS_PENDING,
+                'subtotal' => $subtotal,
+                'discount_total' => $discountTotal,
+                'total' => $total,
+                'currency' => 'USD',
+                'metadata' => $orderMetadata,
+                'paid_at' => null,
+                'failed_at' => null,
+            ]);
+
+            $lockedUser->forceFill([
+                'balance' => $afterBalance,
+            ])->save();
+
+            $lockedUser->balanceHistories()->create([
+                'type' => BalanceHistory::TYPE_DEBIT,
+                'amount' => $total * -1,
+                'before_balance' => $beforeBalance,
+                'after_balance' => $afterBalance,
+                'reference' => $order->public_id,
+                'description' => $trimmedOrderComment !== ''
+                    ? $trimmedOrderComment
+                    : sprintf('Wallet payment for order %s.', $order->public_id),
+            ]);
+
+            $this->markOrderPaid($order, null, null);
+
+            $order->refresh();
+            $order->load(['plan', 'user', 'coupon', 'affiliate', 'subscription']);
+
+            return [
+                'order' => $order,
+                'subscription' => $order->subscription,
+                'wallet_balance' => $afterBalance,
+            ];
+        });
     }
 
     /**
@@ -110,15 +207,26 @@ class PaymentService
     {
         $wasUnpaid = $order->paid_at === null;
 
+        if ($this->isOrderEnabled() && $wasUnpaid) {
+            $order->loadMissing('plan');
+
+            $ipmartOrder = $this->orderForCustomer(
+                (int) $order->user_id,
+                (int) ($order->plan?->traffic ?? 0),
+            );
+
+            if (is_array($ipmartOrder)) {
+                $order->forceFill([
+                    'ipmart_order' => $ipmartOrder,
+                ])->save();
+            }
+        }
+
         $order->forceFill([
             'status' => Order::STATUS_PAID,
             'paid_at' => now(),
             'failed_at' => null,
         ])->save();
-
-        if ($wasUnpaid) {
-            $this->storeIpmartOrderPayload($order);
-        }
 
         if ($wasUnpaid && $order->coupon_id !== null) {
             Coupon::query()
@@ -159,25 +267,52 @@ class PaymentService
         }
     }
 
-    private function storeIpmartOrderPayload(Order $order): void
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function orderForCustomer(int $userId, int $amount): ?array
     {
-        $order->loadMissing(['plan', 'user.ipmart']);
-
-        $ipmartAccount = $order->user?->ipmart;
-
-        if (! $ipmartAccount) {
-            return;
+        if ($amount <= 0) {
+            return null;
         }
 
-        $ipmartOrder = DataRequest::payForCustomerUsingBalance($ipmartAccount->ipmart_id, $order->plan->traffic);
+        try {
+            $response = app(IPmartController::class)->orderForCustomer($userId, $amount);
+        } catch (\Throwable $throwable) {
+            Log::warning('IPmart order-for-customer call threw an exception.', [
+                'user_id' => $userId,
+                'amount' => $amount,
+                'error' => $throwable->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $payload = $response->getData(true);
+
+        if ($response->getStatusCode() >= 400 || ! is_array($payload) || ! (bool) ($payload['success'] ?? false)) {
+            Log::warning('IPmart order-for-customer call returned an unsuccessful response.', [
+                'user_id' => $userId,
+                'amount' => $amount,
+                'status_code' => $response->getStatusCode(),
+                'payload' => $payload,
+            ]);
+
+            return null;
+        }
+
+        $ipmartOrder = data_get($payload, 'data.order');
 
         if (! is_array($ipmartOrder)) {
-            return;
+            return null;
         }
 
-        $order->forceFill([
-            'ipmart_order' => $ipmartOrder,
-        ])->save();
+        return $ipmartOrder;
+    }
+
+    private function isOrderEnabled(): bool
+    {
+        return (bool) config('payments.enable_order', false);
     }
 
     private function cancelSubscription(Order $order, ?string $subscriptionReference): void

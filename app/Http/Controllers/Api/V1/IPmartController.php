@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ChangeProxyPasswordRequest;
+use App\Http\Requests\Api\V1\GenerateTestLinkRequest;
 use App\Http\Requests\Api\V1\GetProxyApiLinkRequest;
 use App\Http\Requests\Api\V1\GetProxyCitiesRequest;
 use App\Http\Requests\Api\V1\GetProxyStatesRequest;
+use App\Http\Requests\Api\V1\PayForCustomerUsingBalanceRequest;
 use App\Models\TrafficHistory;
 use App\Models\User;
 use App\Services\Api\IPmart\DataRequest;
@@ -207,6 +209,169 @@ class IPmartController extends Controller
             'data' => [
                 'ipmart_id' => $ipmartAccount->ipmart_id,
                 'proxyPwd' => $ipmartAccount->proxyPwd,
+            ],
+        ]);
+    }
+
+    public function getUserInfo(Request $request): JsonResponse
+    {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $result = DataRequest::getUserInfo($ipmartAccount->ipmart_id);
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user info from IPmart.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    public function getProxyInfo(Request $request): JsonResponse
+    {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $instance = new DataRequest;
+        $result = $instance->getAvailableTraffic($ipmartAccount->ipmart_id);
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch proxy info from IPmart.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    public function generateTestLink(GenerateTestLinkRequest $request): JsonResponse
+    {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $validated = $request->validated();
+
+        $result = DataRequest::generateProxyLinks(
+            $ipmartAccount->ipmart_id,
+            (int) ($validated['protocol'] ?? 0),
+            (int) ($validated['pattern'] ?? 1),
+            (int) ($validated['rule'] ?? 1),
+            (int) ($validated['count'] ?? 0),
+            $validated['country'] ?? null,
+            $validated['state'] ?? null,
+            $validated['city'] ?? null,
+        );
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate test link from IPmart.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    public function payForCustomerUsingBalance(PayForCustomerUsingBalanceRequest $request): JsonResponse
+    {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
+        $validated = $request->validated();
+        $amount = (int) $validated['amount'];
+
+        $result = DataRequest::payForCustomerUsingBalance($ipmartAccount->ipmart_id, $amount);
+
+        if (! $result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to place IPmart order for customer.',
+            ], 500);
+        }
+
+        if (is_array($result) && array_key_exists('plan_balance', $result)) {
+            $ipmartAccount->update([
+                'plan_balance' => (int) $result['plan_balance'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Customer order placed successfully.',
+            'data' => [
+                'user_id' => $authenticatedUser->id,
+                'ipmart_id' => $ipmartAccount->ipmart_id,
+                'amount' => $amount,
+                'order' => $result,
             ],
         ]);
     }

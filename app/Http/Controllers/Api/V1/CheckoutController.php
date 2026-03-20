@@ -24,15 +24,18 @@ class CheckoutController extends Controller
         }
 
         $plan = Plan::query()->findOrFail($payload['plan_id']);
-        $provider = $payload['provider'] ?? (string) config('payments.default_gateway');
+        $paymentMethod = isset($payload['payment_method']) && is_string($payload['payment_method'])
+            ? $payload['payment_method']
+            : 'wallet';
 
         try {
-            $order = $paymentService->createCheckout(
+            $checkout = $paymentService->purchaseWithWallet(
                 user: $user,
                 plan: $plan,
-                provider: $provider,
+                paymentMethod: $paymentMethod,
                 couponCode: $payload['coupon_code'] ?? null,
                 affiliateCode: $payload['affiliate_code'] ?? null,
+                orderComment: $payload['order_comment'] ?? null,
             );
         } catch (InvalidArgumentException $exception) {
             return response()->json([
@@ -41,10 +44,14 @@ class CheckoutController extends Controller
         }
 
         return response()->json([
-            'message' => 'Checkout session created successfully.',
+            'message' => 'Payment successful. Plan ordered and subscription activated.',
             'data' => [
-                'order' => $order,
-                'checkout_url' => $order->metadata['checkout_url'] ?? null,
+                'order' => $checkout['order'],
+                'subscription' => $checkout['subscription'],
+                'wallet' => [
+                    'balance' => $checkout['wallet_balance'],
+                    'balance_formatted' => number_format($checkout['wallet_balance'] / 100, 2, '.', ''),
+                ],
             ],
         ], 201);
     }

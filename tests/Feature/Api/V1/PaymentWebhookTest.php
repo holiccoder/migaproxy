@@ -9,6 +9,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 test('webhook stores ipmart order payload for paid order', function () {
+    config()->set('payments.enable_order', true);
+
     $user = User::factory()->create();
     $plan = Plan::factory()->create([
         'traffic' => 1,

@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('subscriptions:expire')->daily();
 Schedule::command('tickets:close-stale')->daily();
+Schedule::command('ipmart:queue-available-traffic-checks')->everyMinute()->withoutOverlapping();

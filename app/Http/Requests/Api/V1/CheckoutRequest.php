@@ -22,17 +22,22 @@ class CheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
-        $providers = array_keys((array) config('payments.gateways', []));
-
         return [
             'plan_id' => [
                 'required',
                 'integer',
                 Rule::exists('plans', 'id'),
             ],
-            'provider' => ['sometimes', 'string', Rule::in($providers)],
+            'payment_method' => ['sometimes', 'string', Rule::in([
+                'wallet',
+                'credit_card',
+                'paypal',
+                'alipay',
+                'wechat_pay',
+            ])],
             'coupon_code' => ['sometimes', 'string', 'max:64'],
             'affiliate_code' => ['sometimes', 'string', 'max:64'],
+            'order_comment' => ['sometimes', 'string', 'max:1000'],
         ];
     }
 
@@ -45,11 +50,13 @@ class CheckoutRequest extends FormRequest
             'plan_id.required' => 'Plan is required.',
             'plan_id.integer' => 'Plan must be a valid id.',
             'plan_id.exists' => 'Selected plan is not available for checkout.',
-            'provider.in' => 'Selected payment provider is not supported.',
+            'payment_method.in' => 'Selected payment method is not supported.',
             'coupon_code.string' => 'Coupon code must be a string.',
             'coupon_code.max' => 'Coupon code may not be greater than 64 characters.',
             'affiliate_code.string' => 'Affiliate code must be a string.',
             'affiliate_code.max' => 'Affiliate code may not be greater than 64 characters.',
+            'order_comment.string' => 'Order comment must be a string.',
+            'order_comment.max' => 'Order comment may not be greater than 1000 characters.',
         ];
     }
 }
