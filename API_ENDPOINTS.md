@@ -321,6 +321,52 @@ Plan creation is admin-only via Filament backend and is not exposed as a public 
 - Auth: Yes
 - Success (`200`): paginated conversions list.
 
+## IPmart Proxy
+
+### Get Rotating Residential Proxy API Link
+- Method: `GET`
+- URL: `/api/v1/ipmart/proxy-api-link`
+- Auth: Yes
+- Description: Generates a rotating residential proxy link using the authenticated user's IPmart account. The `subUserId` is automatically derived from the user's IPmart record (one-to-one relationship). All `proxy.ipmart.io` hostnames in the response are replaced with `proxy.migaproxy.com`.
+- Query params:
+  - `cntryCode` (required) — 2-letter country code, e.g. `US`, `CA`
+  - `time` (required) — session duration (integer, minutes)
+  - `num` (required) — number of proxies (integer, min 1)
+  - `format` (required) — response format, e.g. `txt`, `json`
+  - `apiCntryCode` (optional) — API country code, defaults to `CA`
+  - `stateName` (optional) — state/province name for city-level targeting
+  - `cityName` (optional) — city name for fine-grained targeting
+- Notes:
+  - Requires the user to have an associated IPmart account; returns `404` if missing.
+  - Host replacement: `proxy.ipmart.io` → `proxy.migaproxy.com` is applied to all string values in the response.
+- Success (`200`):
+```json
+{
+  "success": true,
+  "data": {
+    "link": "http://proxy.migaproxy.com:8080",
+    "ips": [
+      "proxy.migaproxy.com:8080:user:pass",
+      "1.2.3.4:80:user:pass"
+    ]
+  }
+}
+```
+- Error (`404`):
+```json
+{
+  "success": false,
+  "message": "IPmart account not found for this user."
+}
+```
+- Error (`500`):
+```json
+{
+  "success": false,
+  "message": "Failed to generate proxy API link from IPmart"
+}
+```
+
 ## Content Endpoints
 
 ### List Posts

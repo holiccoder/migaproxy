@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Ipmart;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
@@ -9,18 +10,41 @@ test('proxy api link endpoint requires authentication', function () {
 });
 
 test('proxy api link endpoint validates required fields', function () {
-    Sanctum::actingAs(User::factory()->create());
+    $user = User::factory()->create();
+
+    Ipmart::query()->updateOrCreate([
+        'user_id' => (string) $user->id,
+    ], [
+        'ipmart_id' => 'ipmart-123',
+        'proxyName' => 'proxy-name',
+        'proxyPwd' => 'proxy-password',
+        'login_name' => 'proxy-login-name',
+        'passwd' => 'proxy-login-password',
+    ]);
+
+    Sanctum::actingAs($user);
 
     $this->getJson('/api/v1/ipmart/proxy-api-link')
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['subUserId', 'cntryCode', 'time', 'num', 'format']);
+        ->assertJsonValidationErrors(['cntryCode', 'time', 'num', 'format']);
 });
 
 test('proxy api link endpoint validates field types', function () {
-    Sanctum::actingAs(User::factory()->create());
+    $user = User::factory()->create();
+
+    Ipmart::query()->updateOrCreate([
+        'user_id' => (string) $user->id,
+    ], [
+        'ipmart_id' => 'ipmart-123',
+        'proxyName' => 'proxy-name',
+        'proxyPwd' => 'proxy-password',
+        'login_name' => 'proxy-login-name',
+        'passwd' => 'proxy-login-password',
+    ]);
+
+    Sanctum::actingAs($user);
 
     $this->getJson('/api/v1/ipmart/proxy-api-link?'.http_build_query([
-        'subUserId' => '68e77560d247fca264c188ab',
         'cntryCode' => 'TOOLONG',
         'time' => 'not-a-number',
         'num' => -1,
@@ -30,19 +54,31 @@ test('proxy api link endpoint validates field types', function () {
         ->assertJsonValidationErrors(['cntryCode', 'time', 'num']);
 });
 
-test('proxy api link endpoint returns data on success', function () {
-    Sanctum::actingAs(User::factory()->create());
+test('proxy api link endpoint returns data on success with proxy host replaced', function () {
+    $user = User::factory()->create();
 
-    $dataRequest = Mockery::mock('overload:App\\Services\\Api\\IPmart\\DataRequest');
+    Ipmart::query()->updateOrCreate([
+        'user_id' => (string) $user->id,
+    ], [
+        'ipmart_id' => 'ipmart-123',
+        'proxyName' => 'proxy-name',
+        'proxyPwd' => 'proxy-password',
+        'login_name' => 'proxy-login-name',
+        'passwd' => 'proxy-login-password',
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $dataRequest = Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest');
     $dataRequest->shouldReceive('generateAPILink')
         ->once()
+        ->with('CA', 'ipmart-123', 'US', 5, 1, 'txt', null, null)
         ->andReturn([
-            'link' => 'http://proxy.example.com:8080',
-            'ips' => ['1.2.3.4:8080'],
+            'link' => 'http://proxy.ipmart.io:8080',
+            'ips' => ['proxy.ipmart.io:8080:user:pass', '1.2.3.4:80:user:pass'],
         ]);
 
     $this->getJson('/api/v1/ipmart/proxy-api-link?'.http_build_query([
-        'subUserId' => '68e77560d247fca264c188ab',
         'cntryCode' => 'US',
         'time' => 5,
         'num' => 1,
@@ -50,19 +86,32 @@ test('proxy api link endpoint returns data on success', function () {
     ]))
         ->assertOk()
         ->assertJsonPath('success', true)
-        ->assertJsonStructure(['success', 'data']);
+        ->assertJsonPath('data.link', 'http://proxy.migaproxy.com:8080')
+        ->assertJsonPath('data.ips.0', 'proxy.migaproxy.com:8080:user:pass')
+        ->assertJsonPath('data.ips.1', '1.2.3.4:80:user:pass');
 });
 
 test('proxy api link endpoint returns 500 when ipmart fails', function () {
-    Sanctum::actingAs(User::factory()->create());
+    $user = User::factory()->create();
 
-    $dataRequest = Mockery::mock('overload:App\\Services\\Api\\IPmart\\DataRequest');
+    Ipmart::query()->updateOrCreate([
+        'user_id' => (string) $user->id,
+    ], [
+        'ipmart_id' => 'ipmart-123',
+        'proxyName' => 'proxy-name',
+        'proxyPwd' => 'proxy-password',
+        'login_name' => 'proxy-login-name',
+        'passwd' => 'proxy-login-password',
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $dataRequest = Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest');
     $dataRequest->shouldReceive('generateAPILink')
         ->once()
         ->andReturn(null);
 
     $this->getJson('/api/v1/ipmart/proxy-api-link?'.http_build_query([
-        'subUserId' => '68e77560d247fca264c188ab',
         'cntryCode' => 'US',
         'time' => 5,
         'num' => 1,
@@ -71,4 +120,24 @@ test('proxy api link endpoint returns 500 when ipmart fails', function () {
         ->assertStatus(500)
         ->assertJsonPath('success', false)
         ->assertJsonPath('message', 'Failed to generate proxy API link from IPmart');
+});
+
+test('proxy api link endpoint returns 404 when ipmart account is missing', function () {
+    $user = User::factory()->create();
+
+    Sanctum::actingAs($user);
+
+    $dataRequest = Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest');
+    $dataRequest->shouldReceive('generateAPILink')
+        ->never();
+
+    $this->getJson('/api/v1/ipmart/proxy-api-link?'.http_build_query([
+        'cntryCode' => 'US',
+        'time' => 5,
+        'num' => 1,
+        'format' => 'txt',
+    ]))
+        ->assertNotFound()
+        ->assertJsonPath('success', false)
+        ->assertJsonPath('message', 'IPmart account not found for this user.');
 });

@@ -22,7 +22,6 @@ class GetProxyApiLinkRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'subUserId' => ['required', 'string'],
             'cntryCode' => ['required', 'string', 'size:2'],
             'time' => ['required', 'integer', 'min:1'],
             'num' => ['required', 'integer', 'min:1'],
@@ -39,8 +38,6 @@ class GetProxyApiLinkRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'subUserId.required' => 'Sub user ID is required.',
-            'subUserId.string' => 'Sub user ID must be a string.',
             'cntryCode.required' => 'Country code is required.',
             'cntryCode.string' => 'Country code must be a string.',
             'cntryCode.size' => 'Country code must be exactly 2 characters.',

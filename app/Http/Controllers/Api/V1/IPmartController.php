@@ -576,11 +576,28 @@ class IPmartController extends Controller
      */
     public function getProxyAPILink(GetProxyApiLinkRequest $request): JsonResponse
     {
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $ipmartAccount = $authenticatedUser->ipmart;
+
+        if (! $ipmartAccount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPmart account not found for this user.',
+            ], 404);
+        }
+
         $validated = $request->validated();
 
         $result = DataRequest::generateAPILink(
             $validated['apiCntryCode'] ?? 'CA',
-            $validated['subUserId'],
+            $ipmartAccount->ipmart_id,
             $validated['cntryCode'],
             $validated['time'],
             $validated['num'],
@@ -589,17 +606,18 @@ class IPmartController extends Controller
             $validated['cityName'] ?? null,
         );
 
-        if ($result) {
+        if (! $result) {
             return response()->json([
-                'success' => true,
-                'data' => $result,
-            ]);
+                'success' => false,
+                'message' => 'Failed to generate proxy API link from IPmart',
+            ], 500);
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to generate proxy API link from IPmart',
-        ], 500);
+        $result = $this->replaceProxyHostForGenerateTestLink($result);
 
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
     }
 }
