@@ -17,6 +17,10 @@ use Illuminate\Http\Request;
 
 class IPmartController extends Controller
 {
+    private const IPMART_PROXY_HOST = 'proxy.ipmart.io';
+
+    private const MIGAPROXY_PROXY_HOST = 'proxy.migaproxy.com';
+
     /**
      * Get available countries from IPmart
      */
@@ -247,6 +251,27 @@ class IPmartController extends Controller
         ]);
     }
 
+    /**
+     * @param  mixed  $payload
+     * @return mixed
+     */
+    private function replaceProxyHostForGenerateTestLink(mixed $payload): mixed
+    {
+        if (is_array($payload)) {
+            foreach ($payload as $key => $value) {
+                $payload[$key] = $this->replaceProxyHostForGenerateTestLink($value);
+            }
+
+            return $payload;
+        }
+
+        if (is_string($payload)) {
+            return str_replace(self::IPMART_PROXY_HOST, self::MIGAPROXY_PROXY_HOST, $payload);
+        }
+
+        return $payload;
+    }
+
     public function getProxyInfo(Request $request): JsonResponse
     {
         $authenticatedUser = $request->user();
@@ -320,6 +345,8 @@ class IPmartController extends Controller
                 'message' => 'Failed to generate test link from IPmart.',
             ], 500);
         }
+
+        $result = $this->replaceProxyHostForGenerateTestLink($result);
 
         return response()->json([
             'success' => true,
