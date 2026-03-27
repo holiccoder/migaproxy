@@ -124,6 +124,10 @@ class SocialAuthController extends Controller
             ])->save();
         }
 
+        $user->forceFill([
+            'last_login_at' => now(),
+        ])->save();
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([

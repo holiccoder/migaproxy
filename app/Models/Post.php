@@ -31,6 +31,8 @@ class Post extends Model
         'status',
         'published_at',
         'cover_image_path',
+        'is_pinned_to_top',
+        'is_featured_in_homepage',
     ];
 
     /**
@@ -40,6 +42,8 @@ class Post extends Model
     {
         return [
             'published_at' => 'datetime',
+            'is_pinned_to_top' => 'boolean',
+            'is_featured_in_homepage' => 'boolean',
         ];
     }
 

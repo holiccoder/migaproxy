@@ -32,7 +32,9 @@ test('checkout stores affiliate attribution on order', function () {
         'code' => 'AFFCHECK',
         'is_active' => true,
     ]);
-    $buyer = User::factory()->create();
+    $buyer = User::factory()->create([
+        'balance' => 20000,
+    ]);
     $plan = Plan::factory()->create([
         'price' => 10000,
     ]);
@@ -41,7 +43,7 @@ test('checkout stores affiliate attribution on order', function () {
 
     $response = $this->postJson('/api/v1/checkout', [
         'plan_id' => $plan->id,
-        'provider' => 'fake',
+        'payment_method' => 'wallet',
         'affiliate_code' => 'AFFCHECK',
     ]);
 
@@ -57,7 +59,7 @@ test('checkout stores affiliate attribution on order', function () {
     ]);
 });
 
-test('successful payment webhook creates affiliate conversion', function () {
+test('wallet checkout creates affiliate conversion immediately', function () {
     $affiliateOwner = User::factory()->create();
     $affiliate = Affiliate::factory()->create([
         'user_id' => $affiliateOwner->id,
@@ -67,7 +69,9 @@ test('successful payment webhook creates affiliate conversion', function () {
         'is_active' => true,
     ]);
 
-    $buyer = User::factory()->create();
+    $buyer = User::factory()->create([
+        'balance' => 30000,
+    ]);
     $plan = Plan::factory()->create([
         'price' => 15000,
     ]);
@@ -76,19 +80,11 @@ test('successful payment webhook creates affiliate conversion', function () {
 
     $checkout = $this->postJson('/api/v1/checkout', [
         'plan_id' => $plan->id,
-        'provider' => 'fake',
+        'payment_method' => 'wallet',
         'affiliate_code' => 'AFFPAY',
     ])->assertCreated();
 
-    $orderPublicId = (string) $checkout->json('data.order.public_id');
     $orderId = (int) $checkout->json('data.order.id');
-
-    $this->postJson('/api/v1/payments/webhooks/fake', [
-        'event' => 'checkout.completed',
-        'order_public_id' => $orderPublicId,
-        'provider_reference' => 'fake_ref_123',
-        'subscription_reference' => 'sub_aff_123',
-    ])->assertAccepted();
 
     $order = Order::query()->findOrFail($orderId);
     expect($order->status)->toBe(Order::STATUS_PAID);
@@ -104,4 +100,31 @@ test('successful payment webhook creates affiliate conversion', function () {
 
     $affiliate->refresh();
     expect($affiliate->total_earnings)->toBe(1500);
+});
+
+test('affiliate dashboard returns referral and qr code image urls', function () {
+    config()->set('app.frontend_url', 'https://frontend.example.com');
+
+    $user = User::factory()->create();
+    $affiliate = Affiliate::factory()->create([
+        'user_id' => $user->id,
+        'code' => 'AFFQR01',
+        'is_active' => true,
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $referralUrl = 'https://frontend.example.com/?affiliate_code=AFFQR01';
+    $qrCodeImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?'.http_build_query([
+        'size' => '300x300',
+        'format' => 'png',
+        'data' => $referralUrl,
+    ], '', '&', PHP_QUERY_RFC3986);
+
+    $this->getJson('/api/v1/affiliate/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.affiliate.id', $affiliate->id)
+        ->assertJsonPath('data.affiliate.code', 'AFFQR01')
+        ->assertJsonPath('data.affiliate.referral_url', $referralUrl)
+        ->assertJsonPath('data.affiliate.qr_code_image_url', $qrCodeImageUrl);
 });

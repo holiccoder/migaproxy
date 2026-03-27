@@ -22,6 +22,8 @@ class PostResource extends JsonResource
             'body' => $this->body,
             'published_at' => $this->published_at?->toIso8601String(),
             'cover_image_path' => $this->cover_image_path,
+            'is_pinned_to_top' => $this->is_pinned_to_top,
+            'is_featured_in_homepage' => $this->is_featured_in_homepage,
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'seo' => $this->whenLoaded('seo', function (): array {

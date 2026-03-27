@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             TicketSeeder::class,
             HelpCenterSeeder::class,
+            CmsPageSeeder::class,
         ]);
     }
 }

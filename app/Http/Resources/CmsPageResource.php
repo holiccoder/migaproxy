@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class CmsPageResource extends JsonResource
 {
@@ -19,6 +20,10 @@ class CmsPageResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'content' => $this->content,
+            'content_html' => (string) Str::markdown($this->content ?? '', [
+                'html_input' => 'strip',
+                'allow_unsafe_links' => false,
+            ]),
             'status' => $this->status,
             'published_at' => $this->published_at?->toIso8601String(),
             'seo' => $this->whenLoaded('seo', function (): array {

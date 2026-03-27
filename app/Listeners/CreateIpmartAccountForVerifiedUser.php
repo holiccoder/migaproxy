@@ -2,25 +2,30 @@
 
 namespace App\Listeners;
 
-use App\Events\UserRegistered;
 use App\Models\Ipmart;
+use App\Models\User;
 use App\Services\Api\IPmart\DataRequest;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
-class CreateIpmartAccountForRegisteredUser
+class CreateIpmartAccountForVerifiedUser
 {
-    public function handle(UserRegistered $event): void
+    public function handle(Verified $event): void
     {
+        /** @var User $user */
+        $user = $event->user;
+
         try {
             $ipmartEmail = $this->generateUniqueIpmartEmail();
+            $ipmartPassword = Str::random(16);
 
-            $ipmartAccount = DataRequest::registerUser($ipmartEmail, $event->plainPassword, $event->user->name);
+            $ipmartAccount = DataRequest::registerUser($ipmartEmail, $ipmartPassword, $user->name);
 
             if (! is_array($ipmartAccount)) {
-                Log::warning('Unable to create IPmart account during user registration.', [
-                    'user_id' => $event->user->id,
+                Log::warning('Unable to create IPmart account during email verification.', [
+                    'user_id' => $user->id,
                 ]);
 
                 return;
@@ -34,7 +39,7 @@ class CreateIpmartAccountForRegisteredUser
                 ! isset($ipmartAccount['passwd'])
             ) {
                 Log::warning('IPmart registration response is missing required fields.', [
-                    'user_id' => $event->user->id,
+                    'user_id' => $user->id,
                     'response' => $ipmartAccount,
                 ]);
 
@@ -42,7 +47,7 @@ class CreateIpmartAccountForRegisteredUser
             }
 
             Ipmart::query()->updateOrCreate(
-                ['user_id' => (string) $event->user->id],
+                ['user_id' => (string) $user->id],
                 [
                     'ipmart_id' => (string) $ipmartAccount['ipmart_id'],
                     'ipmart_email' => (string) ($ipmartAccount['ipmart_email'] ?? $ipmartEmail),
@@ -55,7 +60,7 @@ class CreateIpmartAccountForRegisteredUser
             );
         } catch (Throwable $throwable) {
             Log::error('IPmart account creation listener failed.', [
-                'user_id' => $event->user->id,
+                'user_id' => $user->id,
                 'message' => $throwable->getMessage(),
             ]);
         }

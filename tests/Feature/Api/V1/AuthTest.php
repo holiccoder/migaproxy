@@ -9,30 +9,6 @@ use Illuminate\Support\Facades\Notification;
 test('register creates an unverified user and sends a verification email', function () {
     Notification::fake();
 
-    $requestedIpmartEmail = null;
-
-    Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest')
-        ->shouldReceive('registerUser')
-        ->once()
-        ->andReturnUsing(function (string $email, string $password, string $remark = '') use (&$requestedIpmartEmail): array {
-            $requestedIpmartEmail = $email;
-
-            expect($email)->toEndWith('@migaproxy.com');
-            expect($email)->not->toBe('jane@example.com');
-            expect($password)->toBe('password123');
-            expect($remark)->toBe('Jane Doe');
-
-            return [
-                'ipmart_id' => '68196e82da94ea3c1c488fd3',
-                'ipmart_email' => $email,
-                'plan_balance' => '0',
-                'proxyName' => '5Vj38Pj',
-                'proxyPwd' => 'Mv2Ld2Ij6Ej',
-                'login_name' => 'o5Hj8Pj',
-                'passwd' => 'benny04asddddlsi',
-            ];
-        });
-
     $response = $this->postJson('/api/v1/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
@@ -55,24 +31,14 @@ test('register creates an unverified user and sends a verification email', funct
         'email_verified_at' => null,
     ]);
 
+    $this->assertDatabaseMissing('ipmarts', [
+        'user_id' => $userId,
+    ]);
+
     $user = User::query()->find($userId);
     expect($user)->toBeInstanceOf(User::class);
 
     Notification::assertSentTo($user, VerifyEmail::class);
-
-    expect($requestedIpmartEmail)->not->toBeNull();
-    expect($requestedIpmartEmail)->not->toBe('jane@example.com');
-
-    $this->assertDatabaseHas('ipmarts', [
-        'user_id' => $userId,
-        'ipmart_id' => '68196e82da94ea3c1c488fd3',
-        'ipmart_email' => $requestedIpmartEmail,
-        'plan_balance' => '0',
-        'proxyName' => '5Vj38Pj',
-        'proxyPwd' => 'Mv2Ld2Ij6Ej',
-        'login_name' => 'o5Hj8Pj',
-        'passwd' => 'benny04asddddlsi',
-    ]);
 });
 
 test('login requires a verified email address', function () {
@@ -90,6 +56,10 @@ test('login requires a verified email address', function () {
         ->assertForbidden()
         ->assertJsonPath('message', 'Please verify your email before logging in.')
         ->assertJsonPath('email_verification_required', true);
+
+    $user->refresh();
+
+    expect($user->last_login_at)->toBeNull();
 
     Notification::assertSentTo($user, VerifyEmail::class);
 });
@@ -129,6 +99,11 @@ test('login returns token for valid credentials', function () {
         ->assertJsonMissingPath('data.user.proxyName')
         ->assertJsonMissingPath('data.user.proxyPwd')
         ->assertJsonPath('data.token_type', 'Bearer');
+
+    $user->refresh();
+
+    expect($user->last_login_at)->not->toBeNull();
+    expect($response->json('data.user.last_login_at'))->not->toBeNull();
 });
 
 test('login fails for invalid credentials', function () {
@@ -146,3 +121,18 @@ test('login fails for invalid credentials', function () {
         ->assertUnprocessable()
         ->assertJsonPath('message', 'Invalid credentials.');
 });
+
+test('register requires password to include both letters and numbers', function (string $password, string $email) {
+    $this->postJson('/api/v1/register', [
+        'name' => 'Jane Doe',
+        'email' => $email,
+        'password' => $password,
+        'password_confirmation' => $password,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['password'])
+        ->assertJsonPath('errors.password.0', 'Password must include both letters and numbers.');
+})->with([
+    'letters only' => ['abcdefgh', 'letters-only@example.com'],
+    'numbers only' => ['12345678', 'numbers-only@example.com'],
+]);

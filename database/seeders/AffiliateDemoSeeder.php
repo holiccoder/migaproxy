@@ -69,10 +69,10 @@ class AffiliateDemoSeeder extends Seeder
                         'user_agent' => fake()->userAgent(),
                         'referrer' => $referrer === 'Direct' ? null : $referrer,
                         'landing_url' => fake()->randomElement([
-                            'https://sass-starter.test/',
-                            'https://sass-starter.test/blog',
-                            'https://sass-starter.test/pricing',
-                            'https://sass-starter.test/features',
+                            'http://127.0.0.1:8001/',
+                            'http://127.0.0.1:8001/blog',
+                            'http://127.0.0.1:8001/pricing',
+                            'http://127.0.0.1:8001/features',
                         ]),
                         'clicked_at' => now()->subDays(31 - $index)->addMinutes(random_int(0, 1440)),
                     ]);

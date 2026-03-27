@@ -38,6 +38,7 @@ class PostController extends Controller
             });
 
         $posts = $query
+            ->orderByDesc('is_pinned_to_top')
             ->latest('published_at')
             ->paginate($filters['per_page'] ?? 15);
 

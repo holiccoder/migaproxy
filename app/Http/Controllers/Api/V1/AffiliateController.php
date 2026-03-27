@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 
 class AffiliateController extends Controller
 {
+    private const QR_CODE_IMAGE_SIZE = '300x300';
+
     public function dashboard(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -84,9 +86,15 @@ class AffiliateController extends Controller
             })
             ->values();
 
+        $referralUrl = $this->buildReferralUrl($affiliate->code);
+        $affiliatePayload = array_merge($affiliate->toArray(), [
+            'referral_url' => $referralUrl,
+            'qr_code_image_url' => $this->buildReferralQrCodeImageUrl($referralUrl),
+        ]);
+
         return response()->json([
             'data' => [
-                'affiliate' => $affiliate,
+                'affiliate' => $affiliatePayload,
                 'stats' => [
                     'clicks_count' => $clicksCount,
                     'conversions_count' => $conversionsCount,
@@ -102,6 +110,24 @@ class AffiliateController extends Controller
                 'payout_history' => $payoutHistory,
             ],
         ]);
+    }
+
+    private function buildReferralUrl(string $affiliateCode): string
+    {
+        $frontendBaseUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+
+        return "{$frontendBaseUrl}/?affiliate_code=".rawurlencode($affiliateCode);
+    }
+
+    private function buildReferralQrCodeImageUrl(string $referralUrl): string
+    {
+        $query = http_build_query([
+            'size' => self::QR_CODE_IMAGE_SIZE,
+            'format' => 'png',
+            'data' => $referralUrl,
+        ], '', '&', PHP_QUERY_RFC3986);
+
+        return "https://api.qrserver.com/v1/create-qr-code/?{$query}";
     }
 
     public function conversions(Request $request): JsonResponse

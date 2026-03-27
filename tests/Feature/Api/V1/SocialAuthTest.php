@@ -29,6 +29,12 @@ test('github callback creates a new user and returns sanctum token', function ()
         ->assertJsonPath('data.user.github_id', 'github-123')
         ->assertJsonPath('data.token_type', 'Bearer');
 
+    $user = User::query()->where('email', 'octocat@example.com')->first();
+
+    expect($user)->not->toBeNull();
+    expect($user?->last_login_at)->not->toBeNull();
+    expect($response->json('data.user.last_login_at'))->not->toBeNull();
+
     $this->assertDatabaseHas('users', [
         'email' => 'octocat@example.com',
         'github_id' => 'github-123',
@@ -61,6 +67,11 @@ test('github callback links existing user by email', function () {
         ->assertOk()
         ->assertJsonPath('data.user.id', $existingUser->id)
         ->assertJsonPath('data.user.github_id', 'github-999');
+
+    $existingUser->refresh();
+
+    expect($existingUser->last_login_at)->not->toBeNull();
+    expect($response->json('data.user.last_login_at'))->not->toBeNull();
 
     $this->assertDatabaseHas('users', [
         'id' => $existingUser->id,

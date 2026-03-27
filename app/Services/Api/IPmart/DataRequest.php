@@ -346,4 +346,14 @@ class DataRequest
 
         return $response;
     }
+
+    public static function getUserInfo($id)
+    {
+        $instance = new static;
+        $response = $instance->sendRequest('custom/getSubUserById', [
+            'subUserId' => $id,
+        ]);
+
+        return $response;
+    }
 }

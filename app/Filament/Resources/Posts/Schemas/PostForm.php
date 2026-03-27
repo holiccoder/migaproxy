@@ -9,6 +9,7 @@ use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
@@ -47,6 +48,12 @@ class PostForm
                     ->required()
                     ->default(now())
                     ->time(false),
+                Toggle::make('is_pinned_to_top')
+                    ->label('Pin to Top')
+                    ->default(false),
+                Toggle::make('is_featured_in_homepage')
+                    ->label('Featured in Homepage')
+                    ->default(false),
                 FileUpload::make('cover_image_path')
                     ->label('Cover Image')
                     ->disk('public')

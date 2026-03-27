@@ -48,6 +48,7 @@ test('cms pages index can be filtered by search', function () {
 
 test('cms pages show returns a published page by slug', function () {
     $page = CmsPage::factory()->create([
+        'content' => "# CMS Heading\n\nCMS paragraph body.",
         'status' => CmsPage::STATUS_PUBLISHED,
         'published_at' => now()->subDay(),
     ]);
@@ -69,6 +70,10 @@ test('cms pages show returns a published page by slug', function () {
         ->assertJsonPath('data.seo.open_graph.type', 'website')
         ->assertJsonPath('data.seo.twitter_card.title', 'CMS SEO Title')
         ->assertJsonPath('data.seo.twitter_card.card', 'summary');
+
+    expect($response->json('data.content_html'))
+        ->toContain('<h1>CMS Heading</h1>')
+        ->toContain('<p>CMS paragraph body.</p>');
 });
 
 test('cms pages show rejects unpublished pages', function () {

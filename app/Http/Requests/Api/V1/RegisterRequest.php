@@ -24,7 +24,15 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'max:32', 'alpha_num:ascii', 'confirmed'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:32',
+                'alpha_num:ascii',
+                'regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/',
+                'confirmed',
+            ],
         ];
     }
 
@@ -47,6 +55,7 @@ class RegisterRequest extends FormRequest
             'password.min' => 'Password must be at least 8 characters.',
             'password.max' => 'Password may not be greater than 32 characters.',
             'password.alpha_num' => 'Password may only contain letters and numbers.',
+            'password.regex' => 'Password must include both letters and numbers.',
             'password.confirmed' => 'Password confirmation does not match.',
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\Affiliate;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,9 @@ use Throwable;
 
 class CreateAffiliateProfileForVerifiedUser
 {
-    private const DEFAULT_COMMISSION_VALUE = 10;
+    private const MIN_COMMISSION_VALUE = 1;
+
+    private const MAX_COMMISSION_VALUE = 100;
 
     private const DEFAULT_COOKIE_DAYS = 30;
 
@@ -34,7 +37,7 @@ class CreateAffiliateProfileForVerifiedUser
                 'name' => $user->name.' Affiliate',
                 'code' => $this->generateUniqueAffiliateCode($user->id),
                 'commission_type' => Affiliate::COMMISSION_TYPE_PERCENTAGE,
-                'commission_value' => self::DEFAULT_COMMISSION_VALUE,
+                'commission_value' => $this->resolveDefaultCommissionValue(),
                 'cookie_days' => self::DEFAULT_COOKIE_DAYS,
                 'is_active' => true,
                 'total_earnings' => 0,
@@ -64,5 +67,21 @@ class CreateAffiliateProfileForVerifiedUser
         }
 
         return 'AFF'.Str::upper((string) Str::uuid());
+    }
+
+    private function resolveDefaultCommissionValue(): int
+    {
+        $rawCommissionValue = SystemSetting::getString(
+            SystemSetting::KEY_DEFAULT_AFFILIATE_COMMISSION_RATE,
+            (string) SystemSetting::DEFAULT_AFFILIATE_COMMISSION_RATE,
+        );
+
+        if (! is_string($rawCommissionValue) || ! is_numeric($rawCommissionValue)) {
+            return SystemSetting::DEFAULT_AFFILIATE_COMMISSION_RATE;
+        }
+
+        $commissionValue = (int) round((float) $rawCommissionValue);
+
+        return min(self::MAX_COMMISSION_VALUE, max(self::MIN_COMMISSION_VALUE, $commissionValue));
     }
 }

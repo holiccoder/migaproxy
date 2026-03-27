@@ -26,18 +26,39 @@ class EmailVerificationController extends Controller
             ], 403);
         }
 
-        if ($user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Email is already verified.',
-            ]);
+        $message = 'Email is already verified.';
+
+        if (! $user->hasVerifiedEmail()) {
+            if ($user->markEmailAsVerified()) {
+                event(new Verified($user));
+            }
+
+            $message = 'Email verified successfully.';
         }
 
-        if ($user->markEmailAsVerified()) {
-            event(new Verified($user));
-        }
+        $user->forceFill([
+            'last_login_at' => now(),
+        ])->save();
+
+        $token = $user->createToken('api-token')->plainTextToken;
+        $ipmartAccount = $user->ipmart()->first(['ipmart_id', 'plan_balance', 'proxyName', 'proxyPwd']);
+        $userPayload = array_merge($user->toArray(), [
+            'email_verified' => $user->hasVerifiedEmail(),
+            'ipmart' => [
+                'ipmart_id' => $ipmartAccount?->ipmart_id,
+                'proxyName' => $ipmartAccount?->proxyName,
+                'proxyPwd' => $ipmartAccount?->proxyPwd,
+                'plan_balance' => $ipmartAccount?->plan_balance,
+            ],
+        ]);
 
         return response()->json([
-            'message' => 'Email verified successfully.',
+            'message' => $message,
+            'data' => [
+                'user' => $userPayload,
+                'token' => $token,
+                'token_type' => 'Bearer',
+            ],
         ]);
     }
 

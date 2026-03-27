@@ -28,6 +28,8 @@ class PostFactory extends Factory
             'status' => Post::STATUS_PUBLISHED,
             'published_at' => now()->subDays(fake()->numberBetween(1, 60)),
             'cover_image_path' => fake()->boolean(30) ? 'covers/'.fake()->slug().'.jpg' : null,
+            'is_pinned_to_top' => false,
+            'is_featured_in_homepage' => false,
         ];
     }
 }

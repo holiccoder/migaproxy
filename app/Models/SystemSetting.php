@@ -12,6 +12,12 @@ class SystemSetting extends Model
 
     public const KEY_FRONTEND_LOGO_PATH = 'frontend_logo_path';
 
+    public const KEY_FRONTEND_FAVICON_PATH = 'frontend_favicon_path';
+
+    public const KEY_DEFAULT_AFFILIATE_COMMISSION_RATE = 'default_affiliate_commission_rate';
+
+    public const DEFAULT_AFFILIATE_COMMISSION_RATE = 10;
+
     /**
      * @var list<string>
      */

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Events\UserRegistered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
@@ -19,8 +18,6 @@ class AuthController extends Controller
 
         $user = User::query()->create($validated);
         event(new Registered($user));
-
-        UserRegistered::dispatch($user, $validated['password']);
 
         return response()->json([
             'message' => 'Registration successful. Please verify your email before logging in.',
@@ -55,6 +52,10 @@ class AuthController extends Controller
                 'email_verification_required' => true,
             ], 403);
         }
+
+        $user->forceFill([
+            'last_login_at' => now(),
+        ])->save();
 
         $token = $user->createToken('api-token')->plainTextToken;
         $ipmartAccount = $user->ipmart()->first(['ipmart_id', 'plan_balance', 'proxyName', 'proxyPwd']);
