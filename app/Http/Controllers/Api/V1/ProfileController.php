@@ -21,7 +21,7 @@ class ProfileController extends Controller
             ], 401);
         }
 
-        $ipmartAccount = $user->ipmart()->first(['plan_balance', 'proxyName', 'proxyPwd']);
+        $ipmartAccount = $user->ipmart()->first(['available_traffic', 'plan_balance', 'proxyName', 'proxyPwd']);
 
         return response()->json([
             'id' => $user->id,
@@ -38,6 +38,7 @@ class ProfileController extends Controller
             'youtube_profile' => $user->youtube_profile,
             'instagram_profile' => $user->instagram_profile,
             'balance' => $user->balance,
+            'available_traffic' => $ipmartAccount?->available_traffic,
             'plan_balance' => $ipmartAccount?->plan_balance,
             'proxyName' => $ipmartAccount?->proxyName,
             'proxyPwd' => $ipmartAccount?->proxyPwd,

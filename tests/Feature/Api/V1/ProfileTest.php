@@ -18,6 +18,7 @@ test('authenticated user endpoint includes social profile fields', function () {
         'user_id' => (string) $user->id,
     ], [
         'ipmart_id' => 'ipmart-profile-1',
+        'available_traffic' => '512',
         'plan_balance' => '120',
         'proxyName' => 'john-proxy-name',
         'proxyPwd' => 'john-proxy-password',
@@ -37,6 +38,7 @@ test('authenticated user endpoint includes social profile fields', function () {
         ->assertJsonPath('x_profile', 'https://x.com/john_doe')
         ->assertJsonPath('youtube_profile', 'https://youtube.com/@john_doe')
         ->assertJsonPath('instagram_profile', 'https://instagram.com/john_doe')
+        ->assertJsonPath('available_traffic', 512)
         ->assertJsonPath('plan_balance', 120)
         ->assertJsonPath('proxyName', 'john-proxy-name')
         ->assertJsonPath('proxyPwd', 'john-proxy-password');
