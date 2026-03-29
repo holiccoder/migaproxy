@@ -5,6 +5,7 @@ namespace App\Services\Api\IPmart;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class DataRequest
 {
@@ -40,7 +41,7 @@ class DataRequest
             if ($data['status'] == 200) {
                 return $data['data'];
             } else {
-                Log::critical('IPmart request failed.', [
+                $this->logSafely('critical', 'IPmart request failed.', [
                     'route' => $route,
                     'payload' => $payload,
                     'response' => $data,
@@ -48,11 +49,19 @@ class DataRequest
             }
 
         } catch (GuzzleException $e) {
-            Log::error('IPmart request exception.', [
+            $this->logSafely('error', 'IPmart request exception.', [
                 'route' => $route,
                 'payload' => $payload,
                 'message' => $e->getMessage(),
             ]);
+        }
+    }
+
+    private function logSafely(string $level, string $message, array $context): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (Throwable) {
         }
     }
 
@@ -312,18 +321,63 @@ class DataRequest
     public static function generateAPILink($apiCntryCode, $id, $cntryCode, $time, $num, $format, $stateName, $cityName)
     {
         $instance = new static;
-        $response = $instance->sendRequest('custom/api/getIps', [
-            'apiCntryCode' => $apiCntryCode,
-            'subUserId' => $id,
-            'cntryCode' => $cntryCode,
-            'time' => $time,
-            'num' => $num,
-            'format' => $format,
-            'stateName' => $stateName,
-            'cityName' => $cityName,
-        ]);
+        $client = new \GuzzleHttp\Client;
 
-        return $response;
+        try {
+            $response = $client->request('POST', $instance->request_url.'custom/api/getIps', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'accessKeyId' => $instance->api_key,
+                    'accessKeySecret' => $instance->api_secret,
+                ],
+                'body' => json_encode([
+                    'apiCntryCode' => $apiCntryCode,
+                    'subUserId' => $id,
+                    'cntryCode' => $cntryCode,
+                    'time' => $time,
+                    'num' => $num,
+                    'format' => $format,
+                    'stateName' => $stateName,
+                    'cityName' => $cityName,
+                ]),
+            ]);
+
+            $contents = $response->getBody()->getContents();
+
+            if ($format === 2) {
+                $data = json_decode($contents, true);
+
+                if (is_array($data) && isset($data['status']) && $data['status'] == 200) {
+                    return $data['data'];
+                }
+
+                if (is_array($data) && ! isset($data['status'])) {
+                    $port = array_key_first($data);
+                    $ip = $data[$port];
+                    $link = 'http://proxy.ipmart.io:'.$port;
+
+                    return [
+                        'link' => $link,
+                        'ips' => [$ip.':'.$port],
+                    ];
+                }
+
+                $instance->logSafely('critical', 'IPmart generateAPILink request failed.', [
+                    'response' => $data,
+                ]);
+
+                return null;
+            }
+
+            return $contents;
+
+        } catch (GuzzleException $e) {
+            $instance->logSafely('error', 'IPmart generateAPILink request exception.', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 
     /** check ipmart order */

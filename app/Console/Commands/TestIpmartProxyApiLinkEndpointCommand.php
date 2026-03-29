@@ -20,7 +20,7 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
         {--cntry-code=US : Two-letter country code}
         {--time=5 : Session time in minutes}
         {--num=1 : Number of IPs}
-        {--format=txt : Response format}
+        {--format=1 : Response format (1 or 2)}
         {--api-cntry-code=CA : Optional API country code}
         {--state-name= : Optional state/province name}
         {--city-name= : Optional city name}';
@@ -49,7 +49,7 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
         $apiCntryCode = strtoupper(trim((string) $this->option('api-cntry-code')));
         $stateName = trim((string) $this->option('state-name'));
         $cityName = trim((string) $this->option('city-name'));
-        $format = trim((string) $this->option('format'));
+        $format = (int) $this->option('format');
         $time = (int) $this->option('time');
         $num = (int) $this->option('num');
 
@@ -77,16 +77,22 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
             return self::INVALID;
         }
 
-        if ($format === '') {
-            $this->error('The --format option is required.');
+        if (! in_array($format, [1, 2], true)) {
+            $this->error('The --format option must be either 1 or 2.');
 
             return self::INVALID;
         }
 
-        $user = User::query()->find($userId);
+        $user = User::query()->with('ipmart')->find($userId);
 
         if (! $user instanceof User) {
             $this->error('User not found.');
+
+            return self::FAILURE;
+        }
+
+        if ($user->ipmart === null) {
+            $this->error('IPmart account not found for this user.');
 
             return self::FAILURE;
         }
@@ -96,6 +102,8 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
 
             return self::FAILURE;
         }
+
+        $this->line('Testing user_id='.$user->id.' with ipmart_id='.$user->ipmart->ipmart_id);
 
         $token = $user->createToken('ipmart-proxy-api-link-check');
 
@@ -118,7 +126,7 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
             $query['cityName'] = $cityName;
         }
 
-        $request = Request::create('/api/v1/ipmart/proxy-api-link?'.http_build_query($query), 'GET');
+        $request = Request::create('/api/v1/ipmart/proxy-api-link', 'POST', $query);
         $request->headers->set('Accept', 'application/json');
         $request->headers->set('Authorization', 'Bearer '.$token->plainTextToken);
 
@@ -134,20 +142,111 @@ class TestIpmartProxyApiLinkEndpointCommand extends Command
             $token->accessToken->delete();
         }
 
+        if ($format === 1) {
+            $content = $response->getContent();
+
+            if ($response->getStatusCode() >= 400) {
+                $this->error('Request failed with HTTP status: '.$response->getStatusCode());
+                $this->line($content);
+
+                return self::FAILURE;
+            }
+
+            if (! $this->isValidIpPort(trim($content))) {
+                $this->error('Response is not a valid ip:port format.');
+                $this->line('Raw response: '.$content);
+
+                return self::FAILURE;
+            }
+
+            $this->info('IPmart proxy-api-link endpoint responded successfully (format=1).');
+            $this->line('Proxy endpoint: '.$content);
+
+            return self::SUCCESS;
+        }
+
         $payload = $this->decodePayload($response);
         $message = (string) ($payload['message'] ?? 'No message returned.');
 
         if ($response->getStatusCode() >= 400 || ! (bool) ($payload['success'] ?? false)) {
             $this->error($message);
+            $this->line('HTTP status: '.$response->getStatusCode());
             $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
             return self::FAILURE;
         }
 
-        $this->info('IPmart proxy-api-link endpoint responded successfully.');
+        $invalidProxyEntries = $this->collectInvalidProxyEntries($payload);
+
+        if ($invalidProxyEntries !== []) {
+            $this->error('Some proxy entries are not in ip:port format.');
+            $this->line(json_encode([
+                'invalid_ips' => $invalidProxyEntries,
+                'data' => $payload['data'] ?? [],
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+            return self::FAILURE;
+        }
+
+        $this->info('IPmart proxy-api-link endpoint responded successfully (format=2).');
+        $this->info('All proxy entries are valid ip:port values.');
         $this->line(json_encode($payload['data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function collectInvalidProxyEntries(array $payload): array
+    {
+        $data = $payload['data'] ?? null;
+
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $ips = $data['ips'] ?? null;
+
+        if (! is_array($ips)) {
+            return [];
+        }
+
+        $invalidEntries = [];
+
+        foreach ($ips as $proxyEntry) {
+            if (! is_string($proxyEntry) || ! $this->isValidIpPort($proxyEntry)) {
+                $serializedEntry = json_encode($proxyEntry, JSON_UNESCAPED_SLASHES);
+
+                $invalidEntries[] = is_scalar($proxyEntry)
+                    ? (string) $proxyEntry
+                    : ($serializedEntry === false ? 'unserializable-proxy-entry' : $serializedEntry);
+            }
+        }
+
+        return $invalidEntries;
+    }
+
+    private function isValidIpPort(string $proxyEntry): bool
+    {
+        if (! preg_match('/^(\d{1,3}\.){3}\d{1,3}:\d{1,5}$/', $proxyEntry)) {
+            return false;
+        }
+
+        [$ipAddress, $port] = explode(':', $proxyEntry, 2);
+
+        foreach (explode('.', $ipAddress) as $octet) {
+            $octetValue = (int) $octet;
+
+            if ($octetValue < 0 || $octetValue > 255) {
+                return false;
+            }
+        }
+
+        $portNumber = (int) $port;
+
+        return $portNumber >= 1 && $portNumber <= 65535;
     }
 
     /**

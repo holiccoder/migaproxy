@@ -123,7 +123,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('traffic-history/{userId}', 'getTrafficHistoryByUserId')
                 ->whereNumber('userId')
                 ->name('api.v1.ipmart.traffic-history-by-user');
-            Route::get('proxy-api-link', 'getProxyAPILink')->name('api.v1.ipmart.proxy-api-link');
+            Route::post('proxy-api-link', 'getProxyAPILink')->name('api.v1.ipmart.proxy-api-link');
         });
     });
 });

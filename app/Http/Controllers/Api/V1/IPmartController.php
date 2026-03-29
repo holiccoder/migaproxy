@@ -251,10 +251,6 @@ class IPmartController extends Controller
         ]);
     }
 
-    /**
-     * @param  mixed  $payload
-     * @return mixed
-     */
     private function replaceProxyHostForGenerateTestLink(mixed $payload): mixed
     {
         if (is_array($payload)) {
@@ -270,6 +266,61 @@ class IPmartController extends Controller
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $response
+     * @return array<string, mixed>
+     */
+    private function normalizeProxyApiLinkResponse(array $response): array
+    {
+        $ips = $response['ips'] ?? null;
+
+        if (! is_array($ips)) {
+            return $response;
+        }
+
+        $normalizedIps = [];
+
+        foreach ($ips as $proxyEntry) {
+            if (! is_string($proxyEntry)) {
+                continue;
+            }
+
+            $normalizedEntry = $this->extractProxyEndpoint($proxyEntry);
+
+            if ($normalizedEntry !== null) {
+                $normalizedIps[] = $normalizedEntry;
+            }
+        }
+
+        $response['ips'] = array_values(array_unique($normalizedIps));
+
+        return $response;
+    }
+
+    private function extractProxyEndpoint(string $proxyEntry): ?string
+    {
+        $parts = explode(':', $proxyEntry);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $host = trim($parts[0]);
+        $port = trim($parts[1]);
+
+        if ($host === '' || ! ctype_digit($port)) {
+            return null;
+        }
+
+        $portNumber = (int) $port;
+
+        if ($portNumber < 1 || $portNumber > 65535) {
+            return null;
+        }
+
+        return $host.':'.$portNumber;
     }
 
     public function getProxyInfo(Request $request): JsonResponse
@@ -574,7 +625,7 @@ class IPmartController extends Controller
     /**
      * Get proxy API link for rotating residential proxies
      */
-    public function getProxyAPILink(GetProxyApiLinkRequest $request): JsonResponse
+    public function getProxyAPILink(GetProxyApiLinkRequest $request): JsonResponse|string
     {
         $authenticatedUser = $request->user();
 
@@ -596,24 +647,26 @@ class IPmartController extends Controller
         $validated = $request->validated();
 
         $result = DataRequest::generateAPILink(
-            $validated['apiCntryCode'] ?? 'CA',
+            strtoupper((string) ($validated['apiCntryCode'] ?? 'CA')),
             $ipmartAccount->ipmart_id,
-            $validated['cntryCode'],
-            $validated['time'],
-            $validated['num'],
-            $validated['format'],
+            strtoupper((string) $validated['cntryCode']),
+            (int) $validated['time'],
+            (int) $validated['num'],
+            (int) $validated['format'],
             $validated['stateName'] ?? null,
             $validated['cityName'] ?? null,
         );
 
-        if (! $result) {
+        if ($result === null) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate proxy API link from IPmart',
+                'message' => 'Failed to generate proxy API link from IPmart.',
             ], 500);
         }
 
-        $result = $this->replaceProxyHostForGenerateTestLink($result);
+        if (! is_array($result)) {
+            return $result;
+        }
 
         return response()->json([
             'success' => true,

@@ -19,13 +19,13 @@ test('command tests ipmart proxy-api-link endpoint successfully', function () {
     Mockery::mock('alias:App\\Services\\Api\\IPmart\\DataRequest')
         ->shouldReceive('generateAPILink')
         ->once()
-        ->with('CA', 'ipmart-123', 'US', 5, 1, 'txt', 'California', 'Pittsburg')
+        ->with('CA', 'ipmart-123', 'US', 5, 1, 1, 'California', 'Pittsburg')
         ->andReturn([
-            'link' => 'http://proxy.ipmart.io:8080',
-            'ips' => ['proxy.ipmart.io:8080:user:pass'],
+            'link' => 'http://45.10.20.30:8080',
+            'ips' => ['45.10.20.30:8080:user:pass'],
         ]);
 
-    $this->artisan('ipmart:test-proxy-api-link-endpoint '.$user->id.' --cntry-code=US --time=5 --num=1 --format=txt --state-name=California --city-name=Pittsburg')
+    $this->artisan('ipmart:test-proxy-api-link-endpoint '.$user->id.' --cntry-code=US --time=5 --num=1 --format=1 --state-name=California --city-name=Pittsburg')
         ->expectsOutput('IPmart proxy-api-link endpoint responded successfully.')
         ->assertSuccessful();
 });
